@@ -1,0 +1,55 @@
+{
+  "name": "safe-stake-widget",
+  "version": "0.0.0",
+  "description": "Drop-in React widget for SAFE staking, built on safe-stake-core.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:css": "postcss src/styles.css -o dist/styles.css",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "viem": "^2.0.0",
+    "wagmi": "^3.0.0"
+  },
+  "dependencies": {
+    "safe-stake-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.0",
+    "@testing-library/react": "16.3.2",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "29.1.1",
+    "postcss": "8.5.15",
+    "postcss-cli": "11.0.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwindcss": "4.3.0",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "viem": "2.51.3",
+    "vitest": "4.1.7",
+    "wagmi": "3.6.16"
+  }
+}

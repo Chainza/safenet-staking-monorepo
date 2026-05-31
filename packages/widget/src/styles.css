@@ -1,0 +1,7 @@
+@import "tailwindcss" prefix(ss);
+
+@theme {
+  --color-safe-bg: #ffffff;
+  --color-safe-fg: #1c1c1c;
+  --color-safe-accent: #12ff80;
+}
