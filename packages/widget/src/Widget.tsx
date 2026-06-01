@@ -1,5 +1,5 @@
 import "./styles.css";
-import type { StakingConfig } from "safe-stake-core";
+import type { SafeStakeConfigInput } from "safe-stake-core";
 
 export type WidgetTheme = "light" | "dark";
 export type WidgetMode = "standalone" | "inherit";
@@ -14,7 +14,7 @@ export interface WidgetProps {
    */
   mode?: WidgetMode;
   /** Staking contract configuration passed through to safe-stake-core. */
-  config?: StakingConfig;
+  config?: SafeStakeConfigInput;
 }
 
 export function Widget({ theme = "light", mode = "standalone" }: WidgetProps) {
