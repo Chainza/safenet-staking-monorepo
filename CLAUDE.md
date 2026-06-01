@@ -28,6 +28,25 @@ independently publishable artifact; lower layers have no dependency on higher on
 - **`packages/core` (`safe-stake-core`)** — headless, framework-agnostic TS library for
   staking contract interaction. **viem only** — must not gain a React, wagmi, or DOM
   dependency. This is the resilience boundary: core flows stay usable from any JS environment.
+  - **Core never creates a viem client, transport, or RPC connection.** Every read takes a
+    consumer-supplied `PublicClient`; every write takes a consumer-supplied connected
+    `WalletClient` (`ConnectedWalletClient` = wallet client with `account` + `chain`). This is
+    what lets the widget reuse the host app's client in `"inherit"` mode. Consequently `viem` is
+    a **peerDependency** of core (not a regular dep), with an exact pin in `devDependencies` for
+    local build/test.
+  - **Three API layers:** typed ABIs (`stakingAbi` mirrors `safe-research/safenet`'s
+    `contracts/src/Staking.sol` via `parseAbi`; `erc20Abi` is viem's built-in re-exported as the
+    single source of truth; `erc20PermitAbi` adds the EIP-2612 surface — docs
+    https://docs.safefoundation.org/, repo https://github.com/safe-research/safenet); standalone
+    per-method functions grouped by contract (`staking.*` / `token.*`, covering every read/write
+    on each contract plus a pure `encode*` calldata builder for Safe/EIP-5792 batching); and an
+    ergonomic `createSafeStakeClient({ publicClient, walletClient?, config? })` factory that binds
+    client+config once. Writes both send a tx **and** expose `encode*`. (No rewards/MerkleDrop
+    module: the official repo has no such contract — reintroduce only when one ships upstream.)
+  - **Chain id + addresses are dynamic and overridable.** `config` carries only `{ chainId,
+    addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)` merges built-in
+    `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
+    `getAddress`; defaults to mainnet.
 - **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
   on core. Two integration modes via the `mode` prop: `"standalone"` (manages its own wagmi
   config + connection UI) and `"inherit"` (consumes the host app's wagmi context). `react`,
