@@ -1,11 +1,26 @@
-import type { Address } from "viem";
-
+/** Package version. */
 export const VERSION = "0.0.0";
 
-/** Configuration for connecting to the SAFE staking contracts. */
-export interface StakingConfig {
-  /** Chain ID the staking contract is deployed on. */
-  chainId: number;
-  /** Address of the SAFE staking contract. */
-  stakingContract: Address;
-}
+// Config — dynamic chain id + overridable contract addresses.
+export {
+  DEFAULT_CHAIN_ID,
+  KNOWN_DEPLOYMENTS,
+  resolveConfig,
+  isResolvedConfig,
+  type ContractAddresses,
+  type SafeStakeConfig,
+  type SafeStakeConfigInput,
+} from "./config.js";
+
+// Shared types.
+export type { ConnectedWalletClient, PendingWithdrawal, Address } from "./types.js";
+
+// ABIs.
+export { stakingAbi, erc20Abi, erc20PermitAbi } from "./abi/index.js";
+
+// Per-method utilities (standalone, tree-shakable).
+export * as staking from "./staking.js";
+export * as token from "./token.js";
+
+// Factory client (ergonomic, pre-bound) — the surface the widget mainly uses.
+export { createSafeStakeClient, type CreateSafeStakeClientParams, type SafeStakeClient } from "./client.js";
