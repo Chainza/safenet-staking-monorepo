@@ -22,7 +22,7 @@ Scope to one workspace with `--filter`:
 
 ## Architecture
 
-A three-layer SAFE staking stack (see `PROPOSAL.md` for full intent). Each layer is an
+A three-layer SAFE staking stack. Each layer is an
 independently publishable artifact; lower layers have no dependency on higher ones.
 
 - **`packages/core` (`safe-stake-core`)** — headless, framework-agnostic TS library for
