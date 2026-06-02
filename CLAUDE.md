@@ -44,7 +44,7 @@ independently publishable artifact; lower layers have no dependency on higher on
     client+config once. Writes both send a tx **and** expose `encode*`. (No rewards/MerkleDrop
     module: the official repo has no such contract — reintroduce only when one ships upstream.)
   - **Chain id + addresses are dynamic and overridable.** `config` carries only `{ chainId,
-    addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)` merges built-in
+addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)` merges built-in
     `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
     `getAddress`; defaults to mainnet.
 - **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
@@ -52,6 +52,11 @@ independently publishable artifact; lower layers have no dependency on higher on
   config + connection UI) and `"inherit"` (consumes the host app's wagmi context). `react`,
   `react-dom`, `wagmi`, `viem` are **peerDependencies**; core is a `workspace:*` dependency.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
+  - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
+    on-chain oracle, are excluded from receiving rewards. The oracle is the `SanctionsList`
+    contract at `0x40C57923924B5c5c5455c48D93317139ADDaC8fb` on Ethereum mainnet — call its
+    `isSanctioned(address)` view (or `isSanctionedVerbose`) to gate reward eligibility. Not yet
+    implemented — wire this into the website when the rewards flow lands.
 
 Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
