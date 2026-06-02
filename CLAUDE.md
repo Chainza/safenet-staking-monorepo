@@ -51,6 +51,11 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   on core. Two integration modes via the `mode` prop: `"standalone"` (manages its own wagmi
   config + connection UI) and `"inherit"` (consumes the host app's wagmi context). `react`,
   `react-dom`, `wagmi`, `viem` are **peerDependencies**; core is a `workspace:*` dependency.
+  The UI is built from **vendored shadcn primitives** (`src/components/ui/*`) on Radix, so the
+  widget also carries `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, and
+  `lucide-react` as (exact-pinned) `dependencies`. Defaults to `theme="dark"`. State today is
+  local/mock (`hooks/useStakeDemo.ts`, shaped like real core reads); wiring
+  `createSafeStakeClient` is a later swap. See **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
     on-chain oracle, are excluded from receiving rewards. The oracle is the `SanctionsList`
@@ -88,10 +93,25 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 - **ESM-first**: root `package.json` is `type: module`; intra-package relative imports use
   explicit `.js` extensions (e.g. `import { X } from "./X.js"`) even from `.ts`/`.tsx` source.
 - **Tailwind v4 is CSS-first** — there is no `tailwind.config`. The widget configures Tailwind
-  in `src/styles.css` via `@import "tailwindcss" prefix(ss);` + an `@theme {}` block; all widget
+  in `src/styles.css` via `@import "tailwindcss" prefix(ss);`; all widget
   utilities are `ss:`-prefixed to avoid collisions with host app styles. The widget builds CSS
   separately with `@tailwindcss/postcss` (`build:css` → `dist/styles.css`); the website uses the
   `@tailwindcss/vite` plugin instead of PostCSS.
+- **Widget design tokens live in `src/theme.css`** (imported from `styles.css`): a
+  **`contrast-1…9` neutral scale (1 = canvas → 9 = text)** plus semantic `success`/`error`/
+  `warning`/`info` and brand `accent`/`accent-strong`/`accent-ink`. They are defined as
+  `--safe-*` CSS variables on the `.safe-stake` root and mapped onto Tailwind color tokens via
+  `@theme inline` (so `ss:bg-contrast-2`, `ss:text-accent-strong`, `ss:border-error` exist).
+  Theme flips at runtime: `.safe-stake[data-theme="light"]` overrides the `--safe-*` vars (dark
+  is the default). **Two namespaces, distinct on purpose:** `ss` is Tailwind's (utility prefix +
+  its generated `--ss-*` vars); `--safe-*` / `.safe-stake` are ours — don't conflate them.
+- **Styling rules (widget + website):** style only with `ss:` utilities + the tokens above —
+  **never hand-author a parallel CSS system**; only genuinely un-utility-able bits (keyframes,
+  pseudo-element resets, reduced-motion) belong in `theme.css`'s `@layer base`. **No gradients**
+  (radial/linear/conic) unless explicitly requested — use flat fills + `/opacity` tints.
+  **Even-number sizes only** (2/4/6… px; the named Tailwind scale is already even) and **no
+  explicit `line-height`** (`leading-*`) unless a spot genuinely needs it (1px borders count as
+  line-weight, not a size, and are fine).
 - **Libraries build with tsup** (dual ESM/CJS + `.d.ts`); the app builds with Vite. The widget
   externalizes `react`, `react-dom`, `wagmi`, `viem`.
 - **esbuild build script** must be approved to install cleanly — `onlyBuiltDependencies: [esbuild]`
@@ -101,8 +121,41 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   `@scope`) are placeholders pending npm availability and will be renamed later — don't treat
   the current names as stable.
 
+## Widget UI conventions
+
+- **shadcn for UI primitives.** Widget primitives are **vendored shadcn** in
+  `packages/widget/src/components/ui/` (`button`, `tabs`, `input`, `select`, `card`, `badge`),
+  built on Radix with `class-variance-authority` and a `cn` helper (`lib/utils.ts` =
+  `clsx` + `extendTailwindMerge({ prefix: "ss" })` — the prefix matters so merges dedupe `ss:`
+  classes). Icons come from `lucide-react`. Prefer composing these over hand-rolling new
+  components, and **write minimal custom/boilerplate code**. The domain components
+  (`AmountField`, `ValidatorSelect`, `Summary`, `Header`, panels) are thin compositions over them.
+- **Token bridge:** keep `--safe-*` as the single source of truth and **alias shadcn's semantic
+  tokens onto them** in `theme.css` `@theme inline` (`--color-primary: var(--safe-accent)`,
+  `--color-background: var(--safe-c1)`, …). Our brand stays `accent`; shadcn's brand role is
+  `primary`; shadcn's own `accent` (hover) role is replaced by `secondary` in the vendored
+  components to avoid colliding with our brand `accent`.
+- **Don't portal Radix content out of the widget.** Radix Select/Dialog/Popover default to a
+  portal on `document.body`, which escapes the `.safe-stake` scope where the `--safe-*` vars +
+  `data-theme` live → the floating content renders unthemed (e.g. transparent background).
+  Render such content inline (the Select here drops `SelectPrimitive.Portal`).
+- **No manual memoization.** Do not use `useMemo` / `useCallback` / `React.memo` — write plain
+  computed consts and plain functions. **The React Compiler will be added later** and will handle
+  memoization automatically. Where a hook must re-run every render rather than be memoized (e.g.
+  reading the clock), use the **`"use no memo"`** directive — see `hooks/useDateNow.ts`
+  (`{ "use no memo"; return Date.now(); }`); the directive also satisfies the `react-hooks/purity`
+  lint rule that otherwise rejects `Date.now()` during render. If you genuinely need stable
+  identity without memo hooks (e.g. a `useSyncExternalStore` subscribe), lift it to module scope.
+- **Testing Radix:** activate Radix controls (tabs, etc.) with `@testing-library/user-event`
+  (`await user.click(...)`), not `fireEvent.click` — Radix triggers respond to the focus/pointer
+  sequence, which `fireEvent.click` doesn't reproduce.
+
 ## Commit conventions
 
 - Every commit message starts with a type prefix describing what was done, e.g.
   `feat: CTA button`, `fix: …`, `chore: …`, `docs: …`, `refactor: …`, `test: …`.
 - **Do not** add a `Co-authored-by: Claude` (or any Claude) trailer to commits.
+- **Split work into meaningful, self-contained commits** rather than dumping everything into one.
+  Group changes by concern (e.g. design tokens, vendored UI primitives, the feature UI, the
+  website, docs) and commit them separately, each with its own type-prefixed message, so history
+  reads as a sequence of logical steps. Avoid one giant catch-all commit.
