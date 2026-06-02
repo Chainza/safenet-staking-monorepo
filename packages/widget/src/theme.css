@@ -1,0 +1,128 @@
+/*
+ * Token palette. The widget owns its own CSS variables (scoped to .safe-stake) so
+ * the theme can flip at runtime; `@theme inline` maps them onto Tailwind color
+ * tokens, which generates the `ss:`-prefixed utilities (ss:bg-contrast-2,
+ * ss:text-accent, ss:border-error, …). Dark is the default; [data-theme=light]
+ * overrides the variables. Contrast scale runs 1 = canvas → 9 = text.
+ */
+
+.safe-stake {
+  --safe-c1: #090b0a; /* canvas / app background */
+  --safe-c2: #0e1211; /* card surface */
+  --safe-c3: #141918; /* field / input */
+  --safe-c4: #1b211f; /* hover surface */
+  --safe-c5: #28302d; /* subtle border */
+  --safe-c6: #3a433f; /* border / divider */
+  --safe-c7: #5d6863; /* faint / disabled text */
+  --safe-c8: #9aa6a1; /* muted / secondary text */
+  --safe-c9: #eef2f0; /* primary text */
+
+  --safe-accent: #12ff80;
+  --safe-accent-strong: #12ff80; /* accent used as text/icon (legible on dark) */
+  --safe-accent-ink: #04140b; /* text on an accent fill */
+
+  --safe-success: #2fe27f;
+  --safe-error: #ff5d5d;
+  --safe-warning: #ffb224;
+  --safe-info: #4aa8ff;
+}
+
+.safe-stake[data-theme="light"] {
+  --safe-c1: #ffffff;
+  --safe-c2: #f4f7f5;
+  --safe-c3: #ecf1ee;
+  --safe-c4: #e2e9e5;
+  --safe-c5: #d3dcd7;
+  --safe-c6: #bfcac4;
+  --safe-c7: #8b958f;
+  --safe-c8: #515a55;
+  --safe-c9: #0b1310;
+
+  --safe-accent-strong: #07a24c; /* darker green for legible accent text on light */
+
+  --safe-success: #0a9d52;
+  --safe-error: #d83a3a;
+  --safe-warning: #b7791f;
+  --safe-info: #1f74d6;
+}
+
+@theme inline {
+  --color-contrast-1: var(--safe-c1);
+  --color-contrast-2: var(--safe-c2);
+  --color-contrast-3: var(--safe-c3);
+  --color-contrast-4: var(--safe-c4);
+  --color-contrast-5: var(--safe-c5);
+  --color-contrast-6: var(--safe-c6);
+  --color-contrast-7: var(--safe-c7);
+  --color-contrast-8: var(--safe-c8);
+  --color-contrast-9: var(--safe-c9);
+
+  --color-accent: var(--safe-accent);
+  --color-accent-strong: var(--safe-accent-strong);
+  --color-accent-ink: var(--safe-accent-ink);
+
+  --color-success: var(--safe-success);
+  --color-error: var(--safe-error);
+  --color-warning: var(--safe-warning);
+  --color-info: var(--safe-info);
+
+  /* shadcn semantic aliases → our palette. They reference --safe-* so they
+     inherit the light/dark flip automatically. Our brand stays `accent`;
+     shadcn's brand role is `primary`. (shadcn's own `accent` hover role is
+     replaced by `secondary` in the vendored components to avoid colliding
+     with our brand `accent`.) */
+  --color-background: var(--safe-c1);
+  --color-foreground: var(--safe-c9);
+  --color-card: var(--safe-c2);
+  --color-card-foreground: var(--safe-c9);
+  --color-popover: var(--safe-c2);
+  --color-popover-foreground: var(--safe-c9);
+  --color-primary: var(--safe-accent);
+  --color-primary-foreground: var(--safe-accent-ink);
+  --color-secondary: var(--safe-c3);
+  --color-secondary-foreground: var(--safe-c9);
+  --color-muted: var(--safe-c3);
+  --color-muted-foreground: var(--safe-c8);
+  --color-destructive: var(--safe-error);
+  --color-border: var(--safe-c5);
+  --color-input: var(--safe-c5);
+  --color-ring: var(--safe-accent);
+
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --animate-rise: safe-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes safe-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer base {
+  /* Strip native number-input spinners — no utility covers these pseudo-els. */
+  .safe-stake input[type="number"]::-webkit-outer-spin-button,
+  .safe-stake input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .safe-stake input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .safe-stake *,
+    .safe-stake *::before,
+    .safe-stake *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

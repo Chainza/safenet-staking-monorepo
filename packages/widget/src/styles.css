@@ -1,7 +1,9 @@
+/* Font faces must precede all other rules. Distinctive pairing: Bricolage
+   Grotesque (display/body) + IBM Plex Mono (figures, labels, addresses). */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
 @import "tailwindcss" prefix(ss);
 
-@theme {
-  --color-safe-bg: #ffffff;
-  --color-safe-fg: #1c1c1c;
-  --color-safe-accent: #12ff80;
-}
+/* Design tokens (color scale, semantics, fonts, motion) live in their own
+   file so the styling system is Tailwind utilities + tokens, nothing else. */
+@import "./theme.css";
