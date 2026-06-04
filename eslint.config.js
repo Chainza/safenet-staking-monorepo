@@ -22,6 +22,10 @@ export default tseslint.config(
         ecmaFeatures: { jsx: true },
       },
     },
+    rules: {
+      // Enforce strict equality everywhere — no `==` / `!=`.
+      eqeqeq: ["error", "always"],
+    },
   },
   {
     files: ["packages/widget/**/*.{ts,tsx}", "apps/website/**/*.{ts,tsx}"],
