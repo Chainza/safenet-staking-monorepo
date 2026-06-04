@@ -68,8 +68,19 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
 
 Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
-widget must be built before the app resolves it — `turbo build` handles ordering; in dev,
-keep the widget's `dev --watch` running alongside the website.
+widget must be built before the app resolves it — `turbo build` handles ordering.
+
+**Widget HMR in the website (dev only).** Rather than running the widget's `dev --watch`
+(tsup rebuild → full reload), the website's `vite.config.ts` aliases `safe-stake-widget` to
+the widget's **TS source** (`packages/widget/src/index.ts`) when `command === "serve"`, so
+widget edits hot-reload via React Fast Refresh with no rebuild. Production `vite build` (and
+`turbo build`) drop the alias and consume the published `dist/`, keeping the real artifact
+boundary intact. Two requirements make this work: (1) `resolve.dedupe` lists the shared peers
+(`react`/`react-dom`/`wagmi`/`viem`/`@tanstack/react-query`) — without it the widget source
+could load a second wagmi instance and miss the host's `WagmiContext`, breaking inherit-mode
+detection; (2) the widget's `src/styles.css` declares `@source "./**/*.{ts,tsx}"` (relative
+to itself) so Tailwind emits the `ss:` utilities regardless of whose cwd processes it — the
+widget's own `build:css` _and_ the website resolving it to source.
 
 ## Wallet integration
 

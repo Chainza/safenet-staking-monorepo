@@ -4,6 +4,13 @@
 
 @import "tailwindcss" prefix(ss);
 
+/* Scan the widget source explicitly (relative to this file) rather than relying
+   on Tailwind's cwd-based auto-detection. This keeps the `ss:` utilities correct
+   no matter who processes the stylesheet — the widget's own `build:css` (run
+   from the package dir) AND a host app that resolves the widget to source for
+   HMR (the website's dev-only alias), whose cwd is the app, not this package. */
+@source "./**/*.{ts,tsx}";
+
 /* Design tokens (color scale, semantics, fonts, motion) live in their own
    file so the styling system is Tailwind utilities + tokens, nothing else. */
 @import "./theme.css";
