@@ -3,6 +3,7 @@ dist
 build
 .env
 .env.*
+!.env.example
 .turbo
 coverage
 *.tsbuildinfo

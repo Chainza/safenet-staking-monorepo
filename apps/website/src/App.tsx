@@ -18,7 +18,10 @@ export default function App() {
         </p>
       </section>
 
-      <Widget theme="dark" mode="standalone" />
+      <Widget
+        theme="dark"
+        walletConnectProjectId={import.meta.env.VITE_WALLETCONNECT_PROJECT_ID}
+      />
     </main>
   );
 }
