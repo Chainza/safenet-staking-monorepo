@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { parseEther, type Address } from "viem";
 import type { PendingWithdrawal } from "safe-stake-core";
+import { useWidgetStore } from "../store.js";
 
 /** A validator the user can stake against. Mirrors what a `getValidators`-style
  *  read would surface alongside on-chain stake totals. */
@@ -11,9 +11,10 @@ export interface Validator {
   totalStaked: bigint;
 }
 
-export interface StakeDemoState {
-  connected: boolean;
-  account: Address | null;
+/** Contract-shaped staking data for the connected account. Every field maps to
+ *  a real `safe-stake-core` read; swapping in `createSafeStakeClient` later
+ *  replaces the seed values without touching the component tree. */
+export interface StakeData {
   /** Wallet SAFE balance — `token.getBalance(account)`. */
   walletBalance: bigint;
   /** Staked with the selected validator — `staking.getStake(account, validator)`. */
@@ -24,12 +25,13 @@ export interface StakeDemoState {
   selectedValidator: Validator;
   /** Unbonding delay in seconds — `staking.getWithdrawDelay()`. */
   withdrawDelaySec: bigint;
+  selectValidator: (address: Address) => void;
 }
 
-export interface StakeDemoActions {
-  connect: () => void;
-  disconnect: () => void;
-  selectValidator: (address: Address) => void;
+/** The full state the panels consume: connection status plus staking data. */
+export interface StakeViewState extends StakeData {
+  connected: boolean;
+  account: Address | null;
 }
 
 const NOW_SEC = BigInt(Math.floor(Date.now() / 1000));
@@ -54,27 +56,22 @@ const VALIDATORS: Validator[] = [
 ];
 
 /**
- * Local, contract-shaped state for designing and demoing the widget. Every
- * field maps to a real `safe-stake-core` read; swapping in
- * `createSafeStakeClient` later replaces the seed values without touching the
- * component tree.
+ * Local, contract-shaped staking data, gated on the real wallet connection.
+ * When disconnected the balances zero out so the panels disable exactly as they
+ * did with mock data. This is the seam a later pass replaces with live
+ * `createSafeStakeClient` reads (keyed off `account`).
  */
-export function useStakeDemo(): StakeDemoState & StakeDemoActions {
-  const [connected, setConnected] = useState(false);
-  const [selected, setSelected] = useState<Address>(VALIDATORS[0]!.address);
+export function useStakeData(isConnected: boolean): StakeData {
+  const selected = useWidgetStore((s) => s.selectedValidator);
+  const selectValidator = useWidgetStore((s) => s.selectValidator);
 
+  // `null` selection falls back to the first validator (the default display).
   const selectedValidator = VALIDATORS.find((v) => v.address === selected) ?? VALIDATORS[0]!;
 
-  const connect = () => setConnected(true);
-  const disconnect = () => setConnected(false);
-  const selectValidator = (address: Address) => setSelected(address);
-
   return {
-    connected,
-    account: connected ? "0x7A16fF8270133F063aAb6C9977183D9e72835428" : null,
-    walletBalance: connected ? parseEther("12480.42") : 0n,
-    stakedBalance: connected ? parseEther("8200") : 0n,
-    withdrawals: connected
+    walletBalance: isConnected ? parseEther("12480.42") : 0n,
+    stakedBalance: isConnected ? parseEther("8200") : 0n,
+    withdrawals: isConnected
       ? [
           { amount: parseEther("750"), claimableAt: NOW_SEC - DAY }, // matured → claimable
           { amount: parseEther("1500"), claimableAt: NOW_SEC + 3n * DAY + 14_400n },
@@ -83,8 +80,6 @@ export function useStakeDemo(): StakeDemoState & StakeDemoActions {
     validators: VALIDATORS,
     selectedValidator,
     withdrawDelaySec: 7n * DAY,
-    connect,
-    disconnect,
     selectValidator,
   };
 }

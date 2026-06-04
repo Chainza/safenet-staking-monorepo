@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { StakeDemoState, StakeDemoActions } from "../hooks/useStakeDemo.js";
+import type { StakeViewState } from "../hooks/useStakeData.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
 
 export interface PanelProps {
-  state: StakeDemoState & StakeDemoActions;
+  state: StakeViewState;
   symbol: string;
 }
 

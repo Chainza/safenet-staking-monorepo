@@ -7,7 +7,15 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   treeshake: true,
-  external: ["react", "react-dom", "wagmi", "viem"],
+  external: [
+    "react",
+    "react-dom",
+    "wagmi",
+    "wagmi/chains",
+    "wagmi/connectors",
+    "viem",
+    "@tanstack/react-query",
+  ],
   // Keep `import "./styles.css"` as an external runtime import. esbuild can't
   // process the Tailwind v4 stylesheet, and we ship the compiled CSS separately
   // (see build:css below), so the JS bundle should reference it, not inline it.

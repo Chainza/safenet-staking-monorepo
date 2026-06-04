@@ -1,7 +1,9 @@
 import "./styles.css";
-import { useState } from "react";
 import type { SafeStakeConfigInput } from "safe-stake-core";
-import { useStakeDemo } from "./hooks/useStakeDemo.js";
+import { useConnection } from "wagmi";
+import { WidgetProviders } from "./providers/WidgetProviders.js";
+import { useWidgetStore, type TabKey } from "./store.js";
+import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { Header } from "./components/Header.js";
 import { Card } from "./components/ui/card.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs.js";
@@ -10,8 +12,7 @@ import { UnstakePanel } from "./components/UnstakePanel.js";
 import { ClaimPanel } from "./components/ClaimPanel.js";
 
 export type WidgetTheme = "light" | "dark";
-export type WidgetMode = "standalone" | "inherit";
-type TabKey = "stake" | "unstake" | "claim";
+export type WidgetMode = "auto" | "standalone" | "inherit";
 
 /** Token symbol shown throughout — resolved from `token.getSymbol()` once wired. */
 const SYMBOL = "SAFE";
@@ -20,32 +21,48 @@ export interface WidgetProps {
   /** Visual theme. Defaults to "dark". */
   theme?: WidgetTheme;
   /**
-   * Wallet integration mode. "standalone" manages its own wagmi config and
-   * connection UI; "inherit" consumes the host app's existing wagmi context.
-   * Defaults to "standalone".
+   * Wallet integration mode. "auto" (default) detects a host `WagmiProvider`
+   * and reuses it, falling back to the widget's own config when none is found.
+   * "standalone" always mounts the widget's own config; "inherit" always
+   * consumes the host's (and errors if absent).
    */
   mode?: WidgetMode;
   /** Staking contract configuration passed through to safe-stake-core. */
   config?: SafeStakeConfigInput;
+  /**
+   * WalletConnect Cloud project id, enabling the WalletConnect connector in
+   * standalone mode. Without it, standalone offers the injected connector only.
+   */
+  walletConnectProjectId?: string;
 }
 
-export function Widget({ theme = "dark", mode = "standalone" }: WidgetProps) {
-  const [tab, setTab] = useState<TabKey>("stake");
-  const demo = useStakeDemo();
+export function Widget({ theme = "dark", mode = "auto", walletConnectProjectId }: WidgetProps) {
+  return (
+    <WidgetProviders mode={mode} walletConnectProjectId={walletConnectProjectId}>
+      <WidgetInner theme={theme} />
+    </WidgetProviders>
+  );
+}
+
+/** Inner tree — always rendered inside the wagmi + query-client providers, so
+ *  it's safe to call wagmi hooks here. */
+function WidgetInner({ theme }: { theme: WidgetTheme }) {
+  const tab = useWidgetStore((s) => s.tab);
+  const setTab = useWidgetStore((s) => s.setTab);
+  const resolvedMode = useWidgetStore((s) => s.resolvedMode);
+  const { address, isConnected } = useConnection();
+  const data = useStakeData(isConnected);
+
+  const state: StakeViewState = { connected: isConnected, account: address ?? null, ...data };
 
   return (
     <div
       className="safe-stake ss:w-full ss:max-w-[400px] ss:mx-auto ss:font-display ss:text-foreground ss:antialiased"
       data-theme={theme}
-      data-mode={mode}
+      data-mode={resolvedMode}
     >
       <Card className="ss:rounded-[20px] ss:p-5 ss:animate-rise">
-        <Header
-          account={demo.account}
-          onConnect={demo.connect}
-          onDisconnect={demo.disconnect}
-          showConnect={mode === "standalone"}
-        />
+        <Header />
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList>
@@ -54,13 +71,13 @@ export function Widget({ theme = "dark", mode = "standalone" }: WidgetProps) {
             <TabsTrigger value="claim">claim</TabsTrigger>
           </TabsList>
           <TabsContent value="stake">
-            <StakePanel state={demo} symbol={SYMBOL} />
+            <StakePanel state={state} symbol={SYMBOL} />
           </TabsContent>
           <TabsContent value="unstake">
-            <UnstakePanel state={demo} symbol={SYMBOL} />
+            <UnstakePanel state={state} symbol={SYMBOL} />
           </TabsContent>
           <TabsContent value="claim">
-            <ClaimPanel state={demo} symbol={SYMBOL} />
+            <ClaimPanel state={state} symbol={SYMBOL} />
           </TabsContent>
         </Tabs>
 
@@ -69,7 +86,7 @@ export function Widget({ theme = "dark", mode = "standalone" }: WidgetProps) {
           <span className="ss:size-0.5 ss:rounded-full ss:bg-muted-foreground" aria-hidden />
           <span>Non-custodial</span>
           <span className="ss:size-0.5 ss:rounded-full ss:bg-muted-foreground" aria-hidden />
-          <span>{demo.validators.length} validators</span>
+          <span>{data.validators.length} validators</span>
         </div>
       </Card>
     </div>

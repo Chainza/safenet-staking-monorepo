@@ -1,4 +1,4 @@
-import type { Validator } from "../hooks/useStakeDemo.js";
+import type { Validator } from "../hooks/useStakeData.js";
 import { formatToken, truncateAddress } from "../lib/format.js";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select.js";
 import type { Address } from "safe-stake-core";
