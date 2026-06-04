@@ -243,6 +243,9 @@ importers:
       '@walletconnect/ethereum-provider':
         specifier: 2.23.9
         version: 2.23.9(@types/react@19.2.15)(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(zod@3.25.76)
+      lucide-react:
+        specifier: 1.17.0
+        version: 1.17.0(react@19.2.6)
       react:
         specifier: 19.2.6
         version: 19.2.6

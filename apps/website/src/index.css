@@ -6,13 +6,33 @@
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-:root {
+/* Page theme tokens, flipped by `data-theme` on <html> (set from theme.ts).
+   Light is the default/fallback; dark overrides. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --page-bg: #f5f8f6;
+  --page-fg: #0a0f0d;
+  --page-muted: #5c6b64;
+  --page-accent: #0a8f4f;
+  --page-border: #dbe2de;
+}
+
+[data-theme="dark"] {
   color-scheme: dark;
+  --page-bg: #090b0a;
+  --page-fg: #eef2f0;
+  --page-muted: #9aa6a1;
+  --page-accent: #12ff80;
+  --page-border: #1c2421;
 }
 
 body {
   margin: 0;
-  background-color: #090b0a;
-  color: #eef2f0;
+  background-color: var(--page-bg);
+  color: var(--page-fg);
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
