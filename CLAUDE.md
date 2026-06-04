@@ -48,14 +48,17 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
     `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
     `getAddress`; defaults to mainnet.
 - **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
-  on core. Two integration modes via the `mode` prop: `"standalone"` (manages its own wagmi
-  config + connection UI) and `"inherit"` (consumes the host app's wagmi context). `react`,
-  `react-dom`, `wagmi`, `viem` are **peerDependencies**; core is a `workspace:*` dependency.
-  The UI is built from **vendored shadcn primitives** (`src/components/ui/*`) on Radix, so the
-  widget also carries `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, and
-  `lucide-react` as (exact-pinned) `dependencies`. Defaults to `theme="dark"`. State today is
-  local/mock (`hooks/useStakeDemo.ts`, shaped like real core reads); wiring
-  `createSafeStakeClient` is a later swap. See **Widget UI conventions** below.
+  on core. The `mode` prop has three values: **`"auto"` (default)** detects a host `WagmiProvider`
+  and reuses it, falling back to the widget's own config when none is found; `"standalone"` always
+  mounts its own; `"inherit"` always consumes the host's (and renders guidance if absent). `react`,
+  `react-dom`, `wagmi`, `viem`, and `@tanstack/react-query` are **peerDependencies**; core is a
+  `workspace:*` dependency. The UI is built from **vendored shadcn primitives**
+  (`src/components/ui/*`) on Radix, so the widget also carries `@radix-ui/*`,
+  `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react` as (exact-pinned)
+  `dependencies`. Defaults to `theme="dark"`. Wallet **connection** is real (wagmi); the staking
+  **data** (`hooks/useStakeData.ts`) is still mock, gated on the real account — wiring
+  `createSafeStakeClient` reads/writes is a later swap. See **Wallet integration** and
+  **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
     on-chain oracle, are excluded from receiving rewards. The oracle is the `SanctionsList`
@@ -67,6 +70,60 @@ Dependency direction is enforced by `workspace:*` links: widget → core, websit
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
 widget must be built before the app resolves it — `turbo build` handles ordering; in dev,
 keep the widget's `dev --watch` running alongside the website.
+
+## Wallet integration
+
+- **Provider boundary — `src/providers/WidgetProviders.tsx`.** The widget needs wagmi +
+  react-query context. It **probes the host's two contexts independently** and backfills only
+  what's missing: `useContext(WagmiContext)` (from `wagmi`) for the config and
+  `useContext(QueryClientContext)` (from `@tanstack/react-query`) for the QueryClient. Reads
+  happen _outside_ any provider it mounts, so they observe the host. Outcomes: host has both →
+  reuse both (inherit); host has neither → mount both (standalone); host has react-query but no
+  wagmi → reuse its QueryClient, mount just the `WagmiProvider`. The probe is a hook called
+  unconditionally — only the _rendering_ branches (no hook-rule violation). The resolved mode is
+  published to the **module-global zustand store** (`src/store.ts`, `useWidgetStore`) via a
+  layout-effect sync, and read by selector (`useWidgetStore(s => s.resolvedMode)`) — no
+  per-value contexts, no prop-drilling. `Widget` splits into a thin outer `Widget` (mounts
+  providers) + `WidgetInner` (calls wagmi hooks, always inside them).
+- **Shared UI state lives in the store** (`resolvedMode`, active `tab`, `selectedValidator`) —
+  read by selector, never drilled. **Transient, component-local state stays in `useState`**
+  (form `amount` inputs, the connector-picker `open` flag): globalizing those would share them
+  across instances and across panels. Because the store is module-global, tests must reset it
+  (`useWidgetStore.setState(...)` in `beforeEach`) to avoid cross-test leakage.
+- **Standalone config — `src/wagmi/standaloneConfig.ts`** is a **module-scoped singleton** cached
+  by `walletConnectProjectId` (created via `getStandaloneConfig`, never in render — no `useMemo`).
+  Mainnet only; connectors are `injected` + `walletConnect` (the latter only when a projectId is
+  passed; otherwise injected-only with a one-time warning). `multiInjectedProviderDiscovery` is
+  **off** so the connector list stays the intended two entries. **Chains come from
+  `src/wagmi/supportedChains.ts`** (the single source of truth, re-exporting from `wagmi/chains`)
+  — import chains from there, never directly from `wagmi/chains`. `queryClient` is likewise a
+  module singleton. `react`/`react-dom`/`wagmi`/`viem`/`@tanstack/react-query` are **peer deps**
+  (react-query must be the single hoisted instance shared with the active wagmi — never bundle it;
+  it's in tsup `external`). The website (a standalone consumer) therefore lists react-query as a
+  direct dep and passes `walletConnectProjectId` from `VITE_WALLETCONNECT_PROJECT_ID`.
+- **Standalone + WalletConnect has two integrator requirements** (both satisfied in the website,
+  declared as the widget's _optional_ peer):
+  1. **`@walletconnect/ethereum-provider`** — `@wagmi/connectors` imports it lazily and does
+     **not** bundle it (it's an optional peer there too). Without it, the WalletConnect connector
+     throws on connect (`Could not resolve "@walletconnect/ethereum-provider"`).
+  2. **Node global polyfills** (`global`/`process`/`Buffer`) — WalletConnect's deps reference them
+     and browsers don't provide them. The website uses `vite-plugin-node-polyfills`; other
+     bundlers need an equivalent. Missing them makes connect fail _silently_ (caught by the
+     mutation) — `WalletControl` surfaces connect errors (console + inline message) so this
+     isn't invisible. (The `@reown/appkit` build script pulled in transitively is declined via
+     `allowBuilds` in `pnpm-workspace.yaml`.)
+- **Connect UI — `src/components/WalletControl.tsx`** is built directly on wagmi hooks —
+  **no ConnectKit or extra wallet UI lib**. Mind the **wagmi v3 deprecations**: use `useConnection`
+  (not `useAccount`), and the mutation hooks' `mutate` (not the deprecated `connect`/`disconnect`
+  aliases) plus `useConnectors()` (not `useConnect().connectors`). There is **no `useWalletConnection`
+  wrapper** — components read `useConnection()` (and the data hook) directly. It renders only in
+  standalone mode (inherit defers to the host); the connector picker and account menu render
+  **inline, not portaled**, to stay inside the `.safe-stake` theme scope (same rule as the Radix
+  Select).
+- **Testing wagmi** uses the **`mock` connector** (`wagmi/connectors`) via the harness in
+  `src/test/wagmi.tsx` (`mainnetConfig`/`twoConnectorConfig` + `WagmiHarness`).
+  `features.defaultConnected` starts a config pre-connected for state assertions. Files that
+  embed JSX must be `.tsx` even for hook tests.
 
 ## Testing expectations
 
@@ -87,7 +144,8 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 - **Exact version pins**: every `dependencies` / `devDependencies` entry is pinned to an
   exact version (no `^`/`~`). When adding a dep, install the specific version and write the
   bare number. The **one exception is `peerDependencies`** (the widget's `react`/`react-dom`/
-  `wagmi`/`viem`), which stay as ranges so consumers aren't forced onto a single version.
+  `wagmi`/`viem`/`@tanstack/react-query`), which stay as ranges so consumers aren't forced onto a
+  single version.
 - **TS 6**: `baseUrl` is deprecated, so `tsconfig.base.json` sets `"ignoreDeprecations": "6.0"`
   (tsup injects `baseUrl` during d.ts builds). Strict mode + `noUncheckedIndexedAccess` are on.
 - **ESM-first**: root `package.json` is `type: module`; intra-package relative imports use
@@ -117,6 +175,8 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 - **esbuild build script** must be approved to install cleanly — `onlyBuiltDependencies: [esbuild]`
   in `pnpm-workspace.yaml`. Package manager is pnpm (pinned via both `packageManager` and
   `devEngines`); the overlap warning between the two is harmless.
+- **Logging:** use `lib/logger.ts` (`logger.log`/`info`/`warn`/`error`) instead of `console.*` in
+  the widget — it prefixes every line with `[safe-stake-widget]`, so callers never repeat it.
 - **Package names are not final.** `safe-stake-core` / `safe-stake-widget` (and the eventual
   `@scope`) are placeholders pending npm availability and will be renamed later — don't treat
   the current names as stable.
