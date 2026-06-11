@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getAddress } from "viem";
-import {
-  DEFAULT_CHAIN_ID,
-  KNOWN_DEPLOYMENTS,
-  isResolvedConfig,
-  resolveConfig,
-} from "./config.js";
+import { DEFAULT_CHAIN_ID, KNOWN_DEPLOYMENTS, isResolvedConfig, resolveConfig } from "./config.js";
 
 const MAINNET_STAKING = "0x115E78f160e1E3eF163B05C84562Fa16fA338509";
 const MAINNET_TOKEN = "0x5aFE3855358E112B5647B952709E6165e1c1eEEe";

@@ -23,4 +23,8 @@ export * as staking from "./staking.js";
 export * as token from "./token.js";
 
 // Factory client (ergonomic, pre-bound) — the surface the widget mainly uses.
-export { createSafeStakeClient, type CreateSafeStakeClientParams, type SafeStakeClient } from "./client.js";
+export {
+  createSafeStakeClient,
+  type CreateSafeStakeClientParams,
+  type SafeStakeClient,
+} from "./client.js";

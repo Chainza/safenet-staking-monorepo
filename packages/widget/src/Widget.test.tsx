@@ -55,9 +55,7 @@ describe("Widget", () => {
     );
     // Host reconnects the mock account on mount → data populates.
     await user.click(screen.getByRole("tab", { name: "claim" }));
-    await waitFor(() =>
-      expect(screen.getAllByText(/Ready to claim/i).length).toBeGreaterThan(0),
-    );
+    await waitFor(() => expect(screen.getAllByText(/Ready to claim/i).length).toBeGreaterThan(0));
     expect(screen.getByRole("button", { name: "Claim" })).toBeDefined();
   });
 

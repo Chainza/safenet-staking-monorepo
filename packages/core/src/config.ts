@@ -57,14 +57,10 @@ export function resolveConfig(input: SafeStakeConfigInput = {}): SafeStakeConfig
   const merged: Partial<ContractAddresses> = { ...base, ...input.addresses };
 
   if (!merged.staking) {
-    throw new Error(
-      `No staking address for chain ${chainId}. Pass addresses.staking to override.`,
-    );
+    throw new Error(`No staking address for chain ${chainId}. Pass addresses.staking to override.`);
   }
   if (!merged.token) {
-    throw new Error(
-      `No token address for chain ${chainId}. Pass addresses.token to override.`,
-    );
+    throw new Error(`No token address for chain ${chainId}. Pass addresses.token to override.`);
   }
 
   const addresses: ContractAddresses = {

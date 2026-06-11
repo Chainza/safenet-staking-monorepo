@@ -55,7 +55,9 @@ describe("staking reads", () => {
   it("getTotalPendingWithdrawals", async () => {
     const { client, readContract } = readStub(7n);
     await expect(staking.getTotalPendingWithdrawals(client, config)).resolves.toBe(7n);
-    expect(readContract.mock.calls[0]![0]).toMatchObject({ functionName: "totalPendingWithdrawals" });
+    expect(readContract.mock.calls[0]![0]).toMatchObject({
+      functionName: "totalPendingWithdrawals",
+    });
   });
 
   it("getWithdrawDelay", async () => {
@@ -128,7 +130,8 @@ describe("staking reads", () => {
   it("getNextClaimableWithdrawal", async () => {
     const { client, readContract } = readStub([1n, 2n]);
     await expect(staking.getNextClaimableWithdrawal(client, config, STAKER)).resolves.toEqual([
-      1n, 2n,
+      1n,
+      2n,
     ]);
     expect(readContract.mock.calls[0]![0]).toMatchObject({
       functionName: "getNextClaimableWithdrawal",
@@ -139,7 +142,10 @@ describe("staking reads", () => {
   it("getWithdrawalNode", async () => {
     const { client, readContract } = readStub([1n, 2n, 0n, 0n]);
     await expect(staking.getWithdrawalNode(client, config, STAKER, 1n)).resolves.toEqual([
-      1n, 2n, 0n, 0n,
+      1n,
+      2n,
+      0n,
+      0n,
     ]);
     expect(readContract.mock.calls[0]![0]).toMatchObject({
       functionName: "withdrawalNodes",
@@ -150,7 +156,8 @@ describe("staking reads", () => {
   it("getPendingWithdrawDelayChange", async () => {
     const { client, readContract } = readStub([100n, 200n]);
     await expect(staking.getPendingWithdrawDelayChange(client, config)).resolves.toEqual([
-      100n, 200n,
+      100n,
+      200n,
     ]);
     expect(readContract.mock.calls[0]![0]).toMatchObject({
       functionName: "pendingWithdrawDelayChange",
@@ -169,7 +176,10 @@ describe("staking reads", () => {
   it("getOwner", async () => {
     const { client, readContract } = readStub(VALIDATOR);
     await expect(staking.getOwner(client, config)).resolves.toBe(VALIDATOR);
-    expect(readContract.mock.calls[0]![0]).toMatchObject({ address: STAKING, functionName: "owner" });
+    expect(readContract.mock.calls[0]![0]).toMatchObject({
+      address: STAKING,
+      functionName: "owner",
+    });
   });
 });
 
@@ -281,7 +291,10 @@ describe("staking writes (send)", () => {
 
 describe("staking writes (encode)", () => {
   it("encodeStake round-trips", () => {
-    const decoded = decodeFunctionData({ abi: stakingAbi, data: staking.encodeStake(VALIDATOR, 100n) });
+    const decoded = decodeFunctionData({
+      abi: stakingAbi,
+      data: staking.encodeStake(VALIDATOR, 100n),
+    });
     expect(decoded.functionName).toBe("stake");
     expect(decoded.args).toEqual([VALIDATOR, 100n]);
   });
