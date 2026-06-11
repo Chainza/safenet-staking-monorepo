@@ -39,7 +39,7 @@ export function StakePanel({ state, symbol }: PanelProps) {
 
       <ValidatorSelect
         validators={validators}
-        value={selectedValidator.address}
+        value={selectedValidator?.address}
         onValueChange={selectValidator}
         symbol={symbol}
         disabled={!connected}

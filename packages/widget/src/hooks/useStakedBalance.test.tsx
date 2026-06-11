@@ -49,6 +49,14 @@ describe("useStakedBalance", () => {
     expect(getStake).not.toHaveBeenCalled();
   });
 
+  it("stays disabled while no validator is known yet (registry loading)", () => {
+    const { result } = renderHook(() => useStakedBalance(undefined), {
+      wrapper: wrapper(true),
+    });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(getStake).not.toHaveBeenCalled();
+  });
+
   it("reads the connected account's stake with the validator through the client", async () => {
     const { result } = renderHook(() => useStakedBalance(VALIDATOR), {
       wrapper: wrapper(true),

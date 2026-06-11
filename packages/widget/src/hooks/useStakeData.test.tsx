@@ -20,6 +20,22 @@ vi.mock("./useSafeStakeClient.js", () => ({
     }) as unknown as SafeStakeClient,
 }));
 
+// The validator set is registry + on-chain composition with its own suite
+// (useValidators.test.tsx) — stub it with a fixed list here.
+const VALIDATORS = [
+  {
+    address: "0x3D58a5475c1336b0A755c3aBd298CeB9b7BB9CDe",
+    name: "Gnosis",
+    totalStaked: parseEther("100"),
+  },
+  {
+    address: "0x7B0A8EFA45dE81F11F2846EC28259B62155a2b37",
+    name: "Greenfield",
+    totalStaked: parseEther("50"),
+  },
+] as const;
+vi.mock("./useValidators.js", () => ({ useValidators: () => VALIDATORS }));
+
 const BALANCE = parseEther("12480.42");
 const STAKED = parseEther("8200");
 
@@ -58,16 +74,17 @@ describe("useStakeData", () => {
     // The stake is read for the selected (default first) validator.
     expect(getStake).toHaveBeenCalledWith(
       expect.any(String),
-      result.current.selectedValidator.address,
+      result.current.selectedValidator?.address,
     );
     expect(result.current.withdrawals.length).toBeGreaterThan(0);
   });
 
-  it("selectValidator() switches the active validator", () => {
+  it("selectValidator() switches the active validator (first is the default)", () => {
     const { result } = renderHook(() => useStakeData(true), { wrapper: wrapper(true) });
+    expect(result.current.selectedValidator?.address).toBe(VALIDATORS[0].address);
     const second = result.current.validators[1]!;
     act(() => result.current.selectValidator(second.address));
-    expect(result.current.selectedValidator.address).toBe(second.address);
+    expect(result.current.selectedValidator?.address).toBe(second.address);
   });
 
   it("exposes exactly one matured (claimable) withdrawal when connected", () => {

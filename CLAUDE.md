@@ -57,8 +57,9 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react` as (exact-pinned)
   `dependencies`. Defaults to `theme="dark"`. Wallet **connection** is real (wagmi); the staking
   **data** (`hooks/useStakeData.ts`) is being wired to live reads field by field — the wallet
-  balance (`useSafeBalance`) and the staked balance (`useStakedBalance`) are real; the
-  remaining fields are still local seed values gated on the account. See **Wallet integration**, **On-chain data hooks** and
+  balance (`useSafeBalance`), the staked balance (`useStakedBalance`) and the validator set
+  (`useValidators`) are real; the remaining fields are still local seed values gated on the
+  account. See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
@@ -159,6 +160,14 @@ widget's own `build:css` _and_ the website resolving it to source.
 - **Per-field hooks compose `useStakeData`.** Each on-chain field gets its own
   query hook (`useSafeBalance` → `client.token.getBalance`, …) that `useStakeData` aggregates
   for the panels; replace the remaining seed fields by adding hooks of the same shape.
+- **The validator set is hybrid (`hooks/useValidators.ts`).** The contract has no validator
+  enumeration, so the _set_ comes from the official registry JSON
+  (`safe-fndn/safenet-beta-data` → `assets/validator-info.json`, linked from
+  docs.safefoundation.org; filtered to `is_active`, checksummed, hour-long `staleTime`) and
+  the _stake totals_ come on-chain (`staking.getTotalValidatorStakes`, one batched query for
+  the whole set). `validators` is `[]` (and `selectedValidator` `undefined`) while the
+  registry loads — `ValidatorSelect` renders a loading placeholder and `useStakedBalance`
+  stays disabled until a validator is known.
 - **QueryClient defaults are tuned for on-chain reads** (widget standalone client, mirrored by
   the website's host client and the test harness): `refetchOnMount: false` and
   `refetchOnWindowFocus: false` (refresh via invalidation — e.g. after a tx — not remount/focus),

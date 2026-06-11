@@ -1,17 +1,18 @@
-import type { Validator } from "../hooks/useStakeData.js";
+import type { Validator } from "../hooks/useValidators.js";
 import { formatToken, truncateAddress } from "../lib/format.js";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select.js";
 import type { Address } from "safe-stake-core";
 
 export interface ValidatorSelectProps {
   validators: Validator[];
-  value: Address;
+  /** `undefined` while the validator registry is still loading. */
+  value: Address | undefined;
   onValueChange: (address: Address) => void;
   symbol: string;
   disabled?: boolean;
 }
 
-/** Validator picker backed by a shadcn Select wired to the demo validators. */
+/** Validator picker backed by a shadcn Select over the live validator set. */
 export function ValidatorSelect({
   validators,
   value,
@@ -19,10 +20,23 @@ export function ValidatorSelect({
   symbol,
   disabled,
 }: ValidatorSelectProps) {
-  const selected = validators.find((v) => v.address === value) ?? validators[0]!;
+  const selected = validators.find((v) => v.address === value) ?? validators[0];
+
+  // Registry still loading (or failed) — hold the trigger's footprint.
+  if (selected === undefined) {
+    return (
+      <div className="ss:mt-2 ss:flex ss:min-h-14 ss:items-center ss:rounded-xl ss:border ss:border-border ss:bg-background ss:p-3 ss:text-sm ss:text-muted-foreground">
+        Loading validators…
+      </div>
+    );
+  }
 
   return (
-    <Select value={value} onValueChange={(v) => onValueChange(v as Address)} disabled={disabled}>
+    <Select
+      value={selected.address}
+      onValueChange={(v) => onValueChange(v as Address)}
+      disabled={disabled}
+    >
       <SelectTrigger className="ss:mt-2" aria-label="Validator">
         <span className="ss:flex ss:min-w-0 ss:items-center ss:gap-2">
           <span
