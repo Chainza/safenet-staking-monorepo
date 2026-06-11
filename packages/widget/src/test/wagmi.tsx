@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createConfig, http, WagmiProvider, type Config } from "wagmi";
-import { mainnet } from "../wagmi/supportedChains.js";
+import { mainnet, mainnetRpcUrl } from "../wagmi/supportedChains.js";
+// Deliberately NOT from supportedChains: this chain exists to exercise the
+// no-known-deployment path, so it must sit outside the supported set.
+import { sepolia } from "wagmi/chains";
 import { injected, mock } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -16,7 +19,16 @@ export function mainnetConfig(defaultConnected = false): Config {
   return createConfig({
     chains: [mainnet],
     connectors: [mockConnector(defaultConnected)],
-    transports: { [mainnet.id]: http() },
+    transports: { [mainnet.id]: http(mainnetRpcUrl) },
+  });
+}
+
+/** A chain with no known SAFE deployment — exercises unsupported-chain paths. */
+export function unsupportedChainConfig(defaultConnected = false): Config {
+  return createConfig({
+    chains: [sepolia],
+    connectors: [mockConnector(defaultConnected)],
+    transports: { [sepolia.id]: http() },
   });
 }
 
@@ -24,11 +36,8 @@ export function mainnetConfig(defaultConnected = false): Config {
 export function twoConnectorConfig(): Config {
   return createConfig({
     chains: [mainnet],
-    connectors: [
-      mock({ accounts: [TEST_ADDRESS] }),
-      mock({ accounts: [SECOND_ADDRESS] }),
-    ],
-    transports: { [mainnet.id]: http() },
+    connectors: [mock({ accounts: [TEST_ADDRESS] }), mock({ accounts: [SECOND_ADDRESS] })],
+    transports: { [mainnet.id]: http(mainnetRpcUrl) },
   });
 }
 
@@ -37,13 +46,29 @@ export function injectedPickerConfig(): Config {
   return createConfig({
     chains: [mainnet],
     connectors: [injected(), mock({ accounts: [TEST_ADDRESS] })],
-    transports: { [mainnet.id]: http() },
+    transports: { [mainnet.id]: http(mainnetRpcUrl) },
   });
 }
 
-/** Wrap children in a wagmi + react-query provider pair for tests. */
+/** Wrap children in a wagmi + react-query provider pair for tests. The
+ *  QueryClient is per-mount (fresh cache per test) but stable across re-renders.
+ *  It mirrors the real clients' defaults (see wagmi/queryClient.ts) with one
+ *  test-only difference: queries never retry, so failures surface immediately. */
 export function WagmiHarness({ config, children }: { config: Config; children: ReactNode }) {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            refetchOnMount: false,
+            refetchOnWindowFocus: false,
+            staleTime: 30_000,
+          },
+          mutations: { retry: false },
+        },
+      }),
+  );
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
