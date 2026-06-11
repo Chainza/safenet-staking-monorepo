@@ -56,8 +56,9 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   (`src/components/ui/*`) on Radix, so the widget also carries `@radix-ui/*`,
   `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react` as (exact-pinned)
   `dependencies`. Defaults to `theme="dark"`. Wallet **connection** is real (wagmi); the staking
-  **data** (`hooks/useStakeData.ts`) is still mock, gated on the real account — wiring
-  `createSafeStakeClient` reads/writes is a later swap. See **Wallet integration** and
+  **data** (`hooks/useStakeData.ts`) is being wired to live reads field by field — the wallet
+  balance is real (`useSafeBalance`); the remaining fields are still local seed values gated on
+  the account. See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
@@ -132,9 +133,38 @@ widget's own `build:css` _and_ the website resolving it to source.
   **inline, not portaled**, to stay inside the `.safe-stake` theme scope (same rule as the Radix
   Select).
 - **Testing wagmi** uses the **`mock` connector** (`wagmi/connectors`) via the harness in
-  `src/test/wagmi.tsx` (`mainnetConfig`/`twoConnectorConfig` + `WagmiHarness`).
-  `features.defaultConnected` starts a config pre-connected for state assertions. Files that
-  embed JSX must be `.tsx` even for hook tests.
+  `src/test/wagmi.tsx` (`mainnetConfig`/`twoConnectorConfig`/`unsupportedChainConfig` +
+  `WagmiHarness`). `features.defaultConnected` starts a config pre-connected for state
+  assertions. Files that embed JSX must be `.tsx` even for hook tests. The harness mainnet
+  transports use `http(mainnetRpcUrl)` (real reads — wagmi/viem's built-in default public RPC
+  is unreliable, so never bare `http()` for mainnet); hook tests needing specific values stub
+  `useSafeStakeClient` instead of hitting the network.
+
+## On-chain data hooks
+
+- **`hooks/useSafeStakeClient.ts` is the single seam to core.** It binds the full
+  `createSafeStakeClient` surface (every read/write/encode) to the **active wagmi chain**
+  (`useChainId`) and the live `PublicClient`/`WalletClient` — components and data hooks never
+  construct core clients or call the standalone core functions directly. The widget takes **no
+  core `config` prop**: the deployment is derived from the wallet's chain via
+  `KNOWN_DEPLOYMENTS`, so a chain switch rebinds the client (and refetches) instead of showing
+  the previous chain's data. On a chain with no known deployment the hook returns `undefined`
+  and every dependent query must disable itself (`enabled`).
+- **Query keys come from a builder function — never inline.** Every `useQuery`/`useMutation`
+  hook gets a dedicated key constructor **exported from the same file as the hook**, named by
+  convention `useSomeData` → `someDataQueryKey` (e.g. `useSafeBalance` →
+  `safeBalanceQueryKey`). Keys are namespaced under `"safe-stake"` and include the chain id
+  (+ account where relevant) so they're collision-free in host apps and chain/account switches
+  miss the old cache.
+- **Per-field hooks compose `useStakeData`.** Each on-chain field gets its own
+  query hook (`useSafeBalance` → `client.token.getBalance`, …) that `useStakeData` aggregates
+  for the panels; replace the remaining seed fields by adding hooks of the same shape.
+- **QueryClient defaults are tuned for on-chain reads** (widget standalone client, mirrored by
+  the website's host client and the test harness): `refetchOnMount: false` and
+  `refetchOnWindowFocus: false` (refresh via invalidation — e.g. after a tx — not remount/focus),
+  `staleTime: 30s` (~2 blocks), queries `retry: 2` (harness: `false`), mutations
+  `retry: false` (never auto-retry a write — it may have broadcast despite the error). These
+  only govern standalone mode; in inherit mode the host's QueryClient defaults apply.
 
 ## Testing expectations
 
