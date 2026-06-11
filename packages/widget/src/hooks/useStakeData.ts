@@ -1,6 +1,7 @@
 import { parseEther, type Address } from "viem";
 import type { PendingWithdrawal } from "safe-stake-core";
 import { useWidgetStore } from "../store.js";
+import { useSafeBalance } from "./useSafeBalance.js";
 
 /** A validator the user can stake against. Mirrors what a `getValidators`-style
  *  read would surface alongside on-chain stake totals. */
@@ -15,7 +16,7 @@ export interface Validator {
  *  a real `safe-stake-core` read; swapping in `createSafeStakeClient` later
  *  replaces the seed values without touching the component tree. */
 export interface StakeData {
-  /** Wallet SAFE balance — `token.getBalance(account)`. */
+  /** Wallet SAFE balance — live `token.getBalance` read (`useSafeBalance`). */
   walletBalance: bigint;
   /** Staked with the selected validator — `staking.getStake(account, validator)`. */
   stakedBalance: bigint;
@@ -56,20 +57,20 @@ const VALIDATORS: Validator[] = [
 ];
 
 /**
- * Local, contract-shaped staking data, gated on the real wallet connection.
- * When disconnected the balances zero out so the panels disable exactly as they
- * did with mock data. This is the seam a later pass replaces with live
- * `createSafeStakeClient` reads (keyed off `account`).
+ * Staking data for the connected account. `walletBalance` is a live on-chain
+ * read; the remaining fields are still local seed values gated on the
+ * connection, each to be replaced by its core read in later passes.
  */
 export function useStakeData(isConnected: boolean): StakeData {
   const selected = useWidgetStore((s) => s.selectedValidator);
   const selectValidator = useWidgetStore((s) => s.selectValidator);
+  const { data: walletBalance = 0n } = useSafeBalance();
 
   // `null` selection falls back to the first validator (the default display).
   const selectedValidator = VALIDATORS.find((v) => v.address === selected) ?? VALIDATORS[0]!;
 
   return {
-    walletBalance: isConnected ? parseEther("12480.42") : 0n,
+    walletBalance,
     stakedBalance: isConnected ? parseEther("8200") : 0n,
     withdrawals: isConnected
       ? [
