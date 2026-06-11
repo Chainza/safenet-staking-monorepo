@@ -1,5 +1,4 @@
 import "./styles.css";
-import type { SafeStakeConfigInput } from "safe-stake-core";
 import { useConnection } from "wagmi";
 import { WidgetProviders } from "./providers/WidgetProviders.js";
 import { useWidgetStore, type TabKey } from "./store.js";
@@ -27,8 +26,6 @@ export interface WidgetProps {
    * consumes the host's (and errors if absent).
    */
   mode?: WidgetMode;
-  /** Staking contract configuration passed through to safe-stake-core. */
-  config?: SafeStakeConfigInput;
   /**
    * WalletConnect Cloud project id, enabling the WalletConnect connector in
    * standalone mode. Without it, standalone offers the injected connector only.
