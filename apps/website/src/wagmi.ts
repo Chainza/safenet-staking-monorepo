@@ -22,7 +22,20 @@ export const wagmiConfig = createConfig({
   chains: [mainnet],
   connectors,
   multiInjectedProviderDiscovery: false,
-  transports: { [mainnet.id]: http() },
+  transports: { [mainnet.id]: http("https://eth.blockrazor.xyz") },
 });
 
-export const queryClient = new QueryClient();
+// Mirrors the widget's standalone QueryClient defaults (see the widget's
+// wagmi/queryClient.ts for the per-option rationale): serve cache on
+// remount/focus, ~2-block staleTime, bounded read retries, never retry writes.
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+      retry: 2,
+    },
+    mutations: { retry: false },
+  },
+});
