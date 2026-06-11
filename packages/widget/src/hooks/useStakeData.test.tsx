@@ -7,15 +7,21 @@ import { useStakeData } from "./useStakeData.js";
 import { useWidgetStore } from "../store.js";
 import { WagmiHarness, mainnetConfig } from "../test/wagmi.js";
 
-// The wallet balance is a live read via the bound core client — stub the
-// client seam; the rest of the hook stays real.
+// The wallet and staked balances are live reads via the bound core client —
+// stub the client seam; the rest of the hook stays real.
 const getBalance = vi.fn();
+const getStake = vi.fn();
 vi.mock("./useSafeStakeClient.js", () => ({
   useSafeStakeClient: () =>
-    ({ config: { chainId: 1 }, token: { getBalance } }) as unknown as SafeStakeClient,
+    ({
+      config: { chainId: 1 },
+      token: { getBalance },
+      staking: { getStake },
+    }) as unknown as SafeStakeClient,
 }));
 
 const BALANCE = parseEther("12480.42");
+const STAKED = parseEther("8200");
 
 const wrapper =
   (connected: boolean) =>
@@ -28,6 +34,7 @@ describe("useStakeData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getBalance.mockResolvedValue(BALANCE);
+    getStake.mockResolvedValue(STAKED);
     useWidgetStore.setState({ selectedValidator: null });
   });
 
@@ -38,15 +45,21 @@ describe("useStakeData", () => {
     expect(result.current.withdrawals).toHaveLength(0);
     // Validators are always listed (they don't depend on the connection).
     expect(result.current.validators.length).toBeGreaterThan(0);
-    // The balance query never fires without an account.
+    // The balance queries never fire without an account.
     expect(getBalance).not.toHaveBeenCalled();
+    expect(getStake).not.toHaveBeenCalled();
   });
 
   it("populates balances and withdrawals when connected", async () => {
     const { result } = renderHook(() => useStakeData(true), { wrapper: wrapper(true) });
-    // walletBalance is the on-chain read; it resolves async.
+    // walletBalance and stakedBalance are on-chain reads; they resolve async.
     await waitFor(() => expect(result.current.walletBalance).toBe(BALANCE));
-    expect(result.current.stakedBalance).toBeGreaterThan(0n);
+    await waitFor(() => expect(result.current.stakedBalance).toBe(STAKED));
+    // The stake is read for the selected (default first) validator.
+    expect(getStake).toHaveBeenCalledWith(
+      expect.any(String),
+      result.current.selectedValidator.address,
+    );
     expect(result.current.withdrawals.length).toBeGreaterThan(0);
   });
 

@@ -57,8 +57,8 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react` as (exact-pinned)
   `dependencies`. Defaults to `theme="dark"`. Wallet **connection** is real (wagmi); the staking
   **data** (`hooks/useStakeData.ts`) is being wired to live reads field by field — the wallet
-  balance is real (`useSafeBalance`); the remaining fields are still local seed values gated on
-  the account. See **Wallet integration**, **On-chain data hooks** and
+  balance (`useSafeBalance`) and the staked balance (`useStakedBalance`) are real; the
+  remaining fields are still local seed values gated on the account. See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'

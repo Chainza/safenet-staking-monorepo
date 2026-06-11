@@ -2,6 +2,7 @@ import { parseEther, type Address } from "viem";
 import type { PendingWithdrawal } from "safe-stake-core";
 import { useWidgetStore } from "../store.js";
 import { useSafeBalance } from "./useSafeBalance.js";
+import { useStakedBalance } from "./useStakedBalance.js";
 
 /** A validator the user can stake against. Mirrors what a `getValidators`-style
  *  read would surface alongside on-chain stake totals. */
@@ -18,7 +19,7 @@ export interface Validator {
 export interface StakeData {
   /** Wallet SAFE balance — live `token.getBalance` read (`useSafeBalance`). */
   walletBalance: bigint;
-  /** Staked with the selected validator — `staking.getStake(account, validator)`. */
+  /** Staked with the selected validator — live `staking.getStake` read (`useStakedBalance`). */
   stakedBalance: bigint;
   /** Withdrawal-queue entries — `staking.getPendingWithdrawals(account)`. */
   withdrawals: PendingWithdrawal[];
@@ -57,9 +58,9 @@ const VALIDATORS: Validator[] = [
 ];
 
 /**
- * Staking data for the connected account. `walletBalance` is a live on-chain
- * read; the remaining fields are still local seed values gated on the
- * connection, each to be replaced by its core read in later passes.
+ * Staking data for the connected account. `walletBalance` and `stakedBalance`
+ * are live on-chain reads; the remaining fields are still local seed values
+ * gated on the connection, each to be replaced by its core read in later passes.
  */
 export function useStakeData(isConnected: boolean): StakeData {
   const selected = useWidgetStore((s) => s.selectedValidator);
@@ -69,9 +70,11 @@ export function useStakeData(isConnected: boolean): StakeData {
   // `null` selection falls back to the first validator (the default display).
   const selectedValidator = VALIDATORS.find((v) => v.address === selected) ?? VALIDATORS[0]!;
 
+  const { data: stakedBalance = 0n } = useStakedBalance(selectedValidator.address);
+
   return {
     walletBalance,
-    stakedBalance: isConnected ? parseEther("8200") : 0n,
+    stakedBalance,
     withdrawals: isConnected
       ? [
           { amount: parseEther("750"), claimableAt: NOW_SEC - DAY }, // matured → claimable
