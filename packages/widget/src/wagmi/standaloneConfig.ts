@@ -1,5 +1,5 @@
 import { createConfig, http, type Config } from "wagmi";
-import { mainnet } from "./supportedChains.js";
+import { mainnet, mainnetRpcUrl } from "./supportedChains.js";
 import { injected, walletConnect } from "wagmi/connectors";
 import { isTruthy } from "../lib/isTruthy.js";
 import { logger } from "../lib/logger.js";
@@ -38,7 +38,7 @@ export function getStandaloneConfig(walletConnectProjectId?: string): Config {
     chains: [mainnet],
     connectors,
     multiInjectedProviderDiscovery: false,
-    transports: { [mainnet.id]: http() },
+    transports: { [mainnet.id]: http(mainnetRpcUrl) },
   });
   cache.set(key, config);
   return config;
