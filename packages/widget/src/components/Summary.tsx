@@ -9,17 +9,13 @@ export function Summary({ children }: { children: ReactNode }) {
 export interface SummaryRowProps {
   label: ReactNode;
   children: ReactNode;
-  /** Render the value in the accent color (e.g. APR). */
-  accent?: boolean;
 }
 
-export function SummaryRow({ label, children, accent }: SummaryRowProps) {
+export function SummaryRow({ label, children }: SummaryRowProps) {
   return (
     <div className="ss:flex ss:items-center ss:justify-between ss:py-2 ss:text-sm ss:[&:not(:first-child)]:border-t ss:[&:not(:first-child)]:border-border">
       <span className="ss:text-muted-foreground">{label}</span>
-      <span className={`ss:font-mono ss:font-medium ${accent ? "ss:text-accent-strong" : ""}`}>
-        {children}
-      </span>
+      <span className="ss:font-mono ss:font-medium">{children}</span>
     </div>
   );
 }

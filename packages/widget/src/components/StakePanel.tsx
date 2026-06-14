@@ -49,9 +49,6 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
       />
 
       <Summary>
-        <SummaryRow label="Est. annual reward" accent>
-          4.8% APR
-        </SummaryRow>
         <SummaryRow label="Unbonding period">{dayCount(withdrawDelaySec)} days</SummaryRow>
         <SummaryRow label="You will stake">
           {hasAmount ? Number(amount).toLocaleString("en-US") : "0.00"} {symbol}
