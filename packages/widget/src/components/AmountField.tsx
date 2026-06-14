@@ -3,6 +3,7 @@ import { Card } from "./ui/card.js";
 import { Input } from "./ui/input.js";
 import { Button } from "./ui/button.js";
 import { Badge } from "./ui/badge.js";
+import { SafeTokenIcon } from "./SafeTokenIcon.js";
 
 export interface AmountFieldProps {
   label: string;
@@ -64,7 +65,7 @@ export function AmountField({
           MAX
         </Button>
         <Badge variant="secondary" className="ss:h-8 ss:px-2 ss:text-sm ss:font-semibold">
-          <span className="ss:size-4 ss:rounded-full ss:bg-primary" aria-hidden />
+          <SafeTokenIcon className="ss:size-4" />
           {symbol}
         </Badge>
       </div>
