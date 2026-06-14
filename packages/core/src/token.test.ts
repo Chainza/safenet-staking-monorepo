@@ -98,6 +98,25 @@ describe("token reads", () => {
       functionName: "DOMAIN_SEPARATOR",
     });
   });
+
+  it("getTokenMeta batches name/symbol/decimals into one multicall", async () => {
+    const multicall = vi.fn().mockResolvedValue(["Safe Token", "SAFE", 18]);
+    const client = { multicall } as unknown as PublicClient;
+    await expect(token.getTokenMeta(client, config)).resolves.toEqual({
+      name: "Safe Token",
+      symbol: "SAFE",
+      decimals: 18,
+    });
+    // One round trip, allowFailure off, all three calls aimed at the token.
+    expect(multicall).toHaveBeenCalledTimes(1);
+    const arg = multicall.mock.calls[0]![0];
+    expect(arg.allowFailure).toBe(false);
+    expect(arg.contracts).toMatchObject([
+      { address: TOKEN, functionName: "name" },
+      { address: TOKEN, functionName: "symbol" },
+      { address: TOKEN, functionName: "decimals" },
+    ]);
+  });
 });
 
 describe("token writes (send)", () => {

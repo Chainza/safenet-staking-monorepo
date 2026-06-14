@@ -16,5 +16,12 @@ export interface PendingWithdrawal {
   claimableAt: bigint;
 }
 
+/** Immutable ERC-20 token metadata, read together in one multicall. */
+export interface TokenMeta {
+  name: string;
+  symbol: string;
+  decimals: number;
+}
+
 /** Re-export of the address type for convenience. */
 export type { Address };

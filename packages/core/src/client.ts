@@ -133,6 +133,7 @@ export function createSafeStakeClient(params: CreateSafeStakeClientParams) {
       getName: () => token.getTokenName(publicClient, config),
       getSymbol: () => token.getTokenSymbol(publicClient, config),
       getDecimals: () => token.getTokenDecimals(publicClient, config),
+      getMeta: () => token.getTokenMeta(publicClient, config),
       getTotalSupply: () => token.getTotalSupply(publicClient, config),
       getBalance: (owner: Address) => token.getBalance(publicClient, config, owner),
       getAllowance: (owner: Address, spender?: Address) =>

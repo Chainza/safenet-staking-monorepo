@@ -13,7 +13,7 @@ export {
 } from "./config.js";
 
 // Shared types.
-export type { ConnectedWalletClient, PendingWithdrawal, Address } from "./types.js";
+export type { ConnectedWalletClient, PendingWithdrawal, TokenMeta, Address } from "./types.js";
 
 // ABIs.
 export { stakingAbi, erc20Abi, erc20PermitAbi } from "./abi/index.js";

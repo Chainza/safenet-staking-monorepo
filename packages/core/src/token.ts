@@ -1,7 +1,7 @@
 import { encodeFunctionData, type Address, type Hash, type Hex, type PublicClient } from "viem";
 import { erc20Abi, erc20PermitAbi } from "./abi/erc20.js";
 import type { SafeStakeConfig } from "./config.js";
-import type { ConnectedWalletClient } from "./types.js";
+import type { ConnectedWalletClient, TokenMeta } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -32,6 +32,29 @@ export function getTokenDecimals(client: PublicClient, config: SafeStakeConfig) 
     abi: erc20Abi,
     functionName: "decimals",
   });
+}
+
+/**
+ * Token name, symbol and decimals in a single multicall — one RPC round trip
+ * instead of three. These are immutable, so consumers can cache the result
+ * indefinitely. Requires a Multicall3 deployment on the chain (present on every
+ * `KNOWN_DEPLOYMENTS` chain); `allowFailure: false` surfaces a missing token as
+ * a thrown error rather than per-call failures.
+ */
+export async function getTokenMeta(
+  client: PublicClient,
+  config: SafeStakeConfig,
+): Promise<TokenMeta> {
+  const token = { address: config.addresses.token, abi: erc20Abi } as const;
+  const [name, symbol, decimals] = await client.multicall({
+    allowFailure: false,
+    contracts: [
+      { ...token, functionName: "name" },
+      { ...token, functionName: "symbol" },
+      { ...token, functionName: "decimals" },
+    ],
+  });
+  return { name, symbol, decimals };
 }
 
 /** Total token supply. */
