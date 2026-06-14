@@ -9,6 +9,8 @@ export interface ValidatorSelectProps {
   value: Address | undefined;
   onValueChange: (address: Address) => void;
   symbol: string;
+  /** Token decimals — scales each validator's total staked for display. */
+  decimals: number;
   disabled?: boolean;
 }
 
@@ -18,6 +20,7 @@ export function ValidatorSelect({
   value,
   onValueChange,
   symbol,
+  decimals,
   disabled,
 }: ValidatorSelectProps) {
   const selected = validators.find((v) => v.address === value) ?? validators[0];
@@ -48,8 +51,8 @@ export function ValidatorSelect({
           <span className="ss:min-w-0">
             <span className="ss:block ss:text-sm ss:font-semibold">{selected.name}</span>
             <span className="ss:block ss:font-mono ss:text-xs ss:text-muted-foreground">
-              {truncateAddress(selected.address)} · {formatToken(selected.totalStaked, 18, 0)}{" "}
-              {symbol}
+              {truncateAddress(selected.address)} ·{" "}
+              {formatToken(selected.totalStaked, decimals, 0)} {symbol}
             </span>
           </span>
         </span>
@@ -60,7 +63,7 @@ export function ValidatorSelect({
             <span className="ss:flex ss:flex-col">
               <span className="ss:text-sm ss:font-semibold">{v.name}</span>
               <span className="ss:font-mono ss:text-xs ss:text-muted-foreground">
-                {formatToken(v.totalStaked, 18, 0)} {symbol}
+                {formatToken(v.totalStaked, decimals, 0)} {symbol}
               </span>
             </span>
           </SelectItem>

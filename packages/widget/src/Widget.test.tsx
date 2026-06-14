@@ -14,7 +14,10 @@ vi.mock("./hooks/useSafeStakeClient.js", () => ({
   useSafeStakeClient: () =>
     ({
       config: { chainId: 1 },
-      token: { getBalance: async () => 0n },
+      token: {
+        getBalance: async () => 0n,
+        getMeta: async () => ({ name: "Safe Token", symbol: "SAFE", decimals: 18 }),
+      },
       staking: {
         getStake: async () => 0n,
         getWithdrawDelay: async () => 604_800n,

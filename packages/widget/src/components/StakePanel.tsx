@@ -8,12 +8,13 @@ import { Button } from "./ui/button.js";
 export interface PanelProps {
   state: StakeViewState;
   symbol: string;
+  decimals: number;
 }
 
 const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
 /** Stake flow → `token.approve` (if needed) then `staking.stake(validator, amount)`. */
-export function StakePanel({ state, symbol }: PanelProps) {
+export function StakePanel({ state, symbol, decimals }: PanelProps) {
   const [amount, setAmount] = useState("");
   const {
     connected,
@@ -34,6 +35,7 @@ export function StakePanel({ state, symbol }: PanelProps) {
         available={walletBalance}
         availableLabel="Balance"
         symbol={symbol}
+        decimals={decimals}
         disabled={!connected}
       />
 
@@ -42,6 +44,7 @@ export function StakePanel({ state, symbol }: PanelProps) {
         value={selectedValidator?.address}
         onValueChange={selectValidator}
         symbol={symbol}
+        decimals={decimals}
         disabled={!connected}
       />
 

@@ -3,6 +3,7 @@ import { useConnection } from "wagmi";
 import { WidgetProviders } from "./providers/WidgetProviders.js";
 import { useWidgetStore, type TabKey } from "./store.js";
 import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
+import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
 import { Header } from "./components/Header.js";
 import { Card } from "./components/ui/card.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs.js";
@@ -12,9 +13,6 @@ import { ClaimPanel } from "./components/ClaimPanel.js";
 
 export type WidgetTheme = "light" | "dark";
 export type WidgetMode = "auto" | "standalone" | "inherit";
-
-/** Token symbol shown throughout — resolved from `token.getSymbol()` once wired. */
-const SYMBOL = "SAFE";
 
 export interface WidgetProps {
   /** Visual theme. Defaults to "dark". */
@@ -49,6 +47,10 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
   const resolvedMode = useWidgetStore((s) => s.resolvedMode);
   const { address, isConnected } = useConnection();
   const data = useStakeData();
+  // `data` is non-nullable — the hook seeds the SAFE fallback as `initialData`.
+  const {
+    data: { symbol, decimals },
+  } = useSafeTokenMeta();
 
   const state: StakeViewState = { connected: isConnected, account: address ?? null, ...data };
 
@@ -68,13 +70,13 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
             <TabsTrigger value="claim">claim</TabsTrigger>
           </TabsList>
           <TabsContent value="stake">
-            <StakePanel state={state} symbol={SYMBOL} />
+            <StakePanel state={state} symbol={symbol} decimals={decimals} />
           </TabsContent>
           <TabsContent value="unstake">
-            <UnstakePanel state={state} symbol={SYMBOL} />
+            <UnstakePanel state={state} symbol={symbol} decimals={decimals} />
           </TabsContent>
           <TabsContent value="claim">
-            <ClaimPanel state={state} symbol={SYMBOL} />
+            <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
           </TabsContent>
         </Tabs>
 

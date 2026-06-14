@@ -8,7 +8,7 @@ import type { PanelProps } from "./StakePanel.js";
 
 /** Claim flow → `staking.claimWithdrawal()` once a queued withdrawal matures
  *  past the unbonding delay. Matured rows are claimable; the rest count down. */
-export function ClaimPanel({ state, symbol }: PanelProps) {
+export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const { connected, withdrawals } = state;
   const nowMs = useDateNow();
 
@@ -45,7 +45,7 @@ export function ClaimPanel({ state, symbol }: PanelProps) {
             Ready to claim
           </div>
           <div className="ss:font-mono ss:text-2xl ss:font-semibold ss:tracking-tight ss:text-accent-strong">
-            {formatToken(claimable)}
+            {formatToken(claimable, decimals)}
             <span className="ss:ml-2 ss:text-sm ss:text-muted-foreground">{symbol}</span>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function ClaimPanel({ state, symbol }: PanelProps) {
             </span>
             <span className="ss:min-w-0 ss:flex-1">
               <div className="ss:font-mono ss:text-sm ss:font-medium">
-                {formatToken(w.amount)}{" "}
+                {formatToken(w.amount, decimals)}{" "}
                 <span className="ss:text-xs ss:text-muted-foreground">{symbol}</span>
               </div>
               <Badge

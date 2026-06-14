@@ -9,6 +9,7 @@ const baseProps = {
   available: parseEther("12480.42"),
   availableLabel: "Balance",
   symbol: "SAFE",
+  decimals: 18,
 };
 
 describe("AmountField", () => {
@@ -29,6 +30,14 @@ describe("AmountField", () => {
     render(<AmountField {...baseProps} onChange={onChange} />);
     fireEvent.click(screen.getByText("MAX"));
     expect(onChange).toHaveBeenCalledWith("12480.42");
+  });
+
+  it("scales the available balance by the token decimals", () => {
+    // 6-decimal token: the same base-units value formats to a smaller amount.
+    render(
+      <AmountField {...baseProps} decimals={6} available={123_456_000n} onChange={() => {}} />,
+    );
+    expect(screen.getByText("123.46")).toBeDefined();
   });
 
   it("disables the input and MAX when disabled", () => {

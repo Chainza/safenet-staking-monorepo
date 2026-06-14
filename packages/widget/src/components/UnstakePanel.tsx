@@ -10,7 +10,7 @@ const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
 /** Unstake flow → `staking.initiateWithdrawal(validator, amount)`; tokens then
  *  sit in the withdrawal queue until the unbonding delay clears. */
-export function UnstakePanel({ state, symbol }: PanelProps) {
+export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
   const [amount, setAmount] = useState("");
   const {
     connected,
@@ -31,6 +31,7 @@ export function UnstakePanel({ state, symbol }: PanelProps) {
         available={stakedBalance}
         availableLabel="Staked"
         symbol={symbol}
+        decimals={decimals}
         disabled={!connected}
       />
 
@@ -39,6 +40,7 @@ export function UnstakePanel({ state, symbol }: PanelProps) {
         value={selectedValidator?.address}
         onValueChange={selectValidator}
         symbol={symbol}
+        decimals={decimals}
         disabled={!connected}
       />
 

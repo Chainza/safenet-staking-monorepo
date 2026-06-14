@@ -12,6 +12,8 @@ export interface AmountFieldProps {
   available: bigint;
   availableLabel: string;
   symbol: string;
+  /** Token decimals — scales `available` for display and MAX. */
+  decimals: number;
   disabled?: boolean;
 }
 
@@ -23,9 +25,10 @@ export function AmountField({
   available,
   availableLabel,
   symbol,
+  decimals,
   disabled,
 }: AmountFieldProps) {
-  const setMax = () => onChange(formatToken(available, 18, 2).replace(/,/g, ""));
+  const setMax = () => onChange(formatToken(available, decimals, 2).replace(/,/g, ""));
 
   return (
     <Card
@@ -36,7 +39,8 @@ export function AmountField({
         <span className="ss:uppercase ss:tracking-wider ss:text-muted-foreground">{label}</span>
         <span className="ss:text-muted-foreground">
           {availableLabel}{" "}
-          <b className="ss:text-foreground ss:font-medium">{formatToken(available)}</b> {symbol}
+          <b className="ss:text-foreground ss:font-medium">{formatToken(available, decimals)}</b>{" "}
+          {symbol}
         </span>
       </div>
       <div className="ss:flex ss:items-center ss:gap-2">

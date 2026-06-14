@@ -25,6 +25,7 @@ describe("ValidatorSelect", () => {
         value={VALIDATORS[1]!.address}
         onValueChange={vi.fn()}
         symbol="SAFE"
+        decimals={18}
       />,
     );
     const trigger = screen.getByRole("combobox", { name: "Validator" });
@@ -40,6 +41,7 @@ describe("ValidatorSelect", () => {
         value={undefined}
         onValueChange={vi.fn()}
         symbol="SAFE"
+        decimals={18}
       />,
     );
     expect(screen.getByRole("combobox", { name: "Validator" }).textContent).toContain("Gnosis");
@@ -47,7 +49,13 @@ describe("ValidatorSelect", () => {
 
   it("renders a loading placeholder while the validator set is empty", () => {
     render(
-      <ValidatorSelect validators={[]} value={undefined} onValueChange={vi.fn()} symbol="SAFE" />,
+      <ValidatorSelect
+        validators={[]}
+        value={undefined}
+        onValueChange={vi.fn()}
+        symbol="SAFE"
+        decimals={18}
+      />,
     );
     expect(screen.getByText(/Loading validators/)).toBeDefined();
     expect(screen.queryByRole("combobox")).toBeNull();
