@@ -167,6 +167,22 @@ widget's own `build:css` _and_ the website resolving it to source.
   `withdrawDelay` needs no account (a contract-wide param) so it reads even while disconnected;
   `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
   inferred tuple-array return.
+- **Token metadata is read in one multicall.** `useSafeTokenMeta` (`hooks/useSafeTokenMeta.ts`)
+  returns the full `useQuery` result whose `data` is `{ name, symbol, decimals }`, via
+  `client.token.getMeta` → core's `token.getTokenMeta`, which **`publicClient.multicall`s**
+  name/symbol/decimals in a single round trip (`allowFailure: false`). It's separate from
+  `useStakeData` (resolved in `WidgetInner`, threaded to the panels as `symbol`/`decimals` props)
+  because metadata is account-independent and needed even while disconnected; it's keyed by chain
+  id alone. The exported `SAFE_TOKEN_META_FALLBACK` (`{ "Safe Token", "SAFE", 18 }`) is seeded as
+  **`initialData`** (not `placeholderData`) so `data` is typed **non-nullable** and survives an
+  error — the consumer destructures it directly (`const { data: { symbol, decimals } } =
+  useSafeTokenMeta()`), no default needed. To stop `initialData` from pinning the seed (the widget
+  globally sets `refetchOnMount: false` + `staleTime: 30s`), the query stamps
+  `initialDataUpdatedAt: 0` (always stale) and overrides `refetchOnMount: "always"`, so the real
+  metadata is read on mount and re-read on a chain (query-key) switch. **Batch related
+  contract-wide reads with multicall** rather than firing them as separate `useQuery`s; reserve the
+  one-read-per-hook shape for account-scoped/invalidatable fields (balances, queues) whose cache
+  lifetimes differ.
 - **The validator set is hybrid (`hooks/useValidators.ts`).** The contract has no validator
   enumeration, so the _set_ comes from the official registry JSON
   (`safe-fndn/safenet-beta-data` → `assets/validator-info.json`, linked from
