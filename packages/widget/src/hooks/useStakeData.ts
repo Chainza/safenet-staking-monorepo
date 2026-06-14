@@ -1,9 +1,11 @@
-import { parseEther, type Address } from "viem";
+import { type Address } from "viem";
 import type { PendingWithdrawal } from "safe-stake-core";
 import { useWidgetStore } from "../store.js";
 import { useSafeBalance } from "./useSafeBalance.js";
 import { useStakedBalance } from "./useStakedBalance.js";
 import { useValidators, type Validator } from "./useValidators.js";
+import { useWithdrawals } from "./useWithdrawals.js";
+import { useWithdrawDelay } from "./useWithdrawDelay.js";
 
 export type { Validator } from "./useValidators.js";
 
@@ -15,8 +17,9 @@ export interface StakeData {
   walletBalance: bigint;
   /** Staked with the selected validator — live `staking.getStake` read (`useStakedBalance`). */
   stakedBalance: bigint;
-  /** Withdrawal-queue entries — `staking.getPendingWithdrawals(account)`. */
-  withdrawals: PendingWithdrawal[];
+  /** Withdrawal-queue entries — `staking.getPendingWithdrawals(account)`.
+   *  Readonly: viem infers the contract's tuple array as `readonly`. */
+  withdrawals: readonly PendingWithdrawal[];
   /** Stakeable validator set — registry JSON + live stake totals (`useValidators`). */
   validators: Validator[];
   /** `undefined` only while the validator registry is still loading (or failed). */
@@ -32,19 +35,19 @@ export interface StakeViewState extends StakeData {
   account: Address | null;
 }
 
-const NOW_SEC = BigInt(Math.floor(Date.now() / 1000));
-const DAY = 86_400n;
-
 /**
- * Staking data for the connected account. `walletBalance`, `stakedBalance` and
- * `validators` are live; the remaining fields are still local seed values
- * gated on the connection, each to be replaced by its core read in later passes.
+ * Staking data for the connected account. Every field maps to a live
+ * `safe-stake-core` read via its own query hook; the per-field hooks each gate
+ * on the connection and active chain internally, so this aggregator just
+ * supplies defaults while their queries are disabled or in flight.
  */
-export function useStakeData(isConnected: boolean): StakeData {
+export function useStakeData(): StakeData {
   const selected = useWidgetStore((s) => s.selectedValidator);
   const selectValidator = useWidgetStore((s) => s.selectValidator);
   const validators = useValidators();
   const { data: walletBalance = 0n } = useSafeBalance();
+  const { data: withdrawals = [] } = useWithdrawals();
+  const { data: withdrawDelaySec = 0n } = useWithdrawDelay();
 
   // `null` selection falls back to the first validator (the default display);
   // `undefined` only while the registry hasn't loaded.
@@ -54,15 +57,10 @@ export function useStakeData(isConnected: boolean): StakeData {
   return {
     walletBalance,
     stakedBalance,
-    withdrawals: isConnected
-      ? [
-          { amount: parseEther("750"), claimableAt: NOW_SEC - DAY }, // matured → claimable
-          { amount: parseEther("1500"), claimableAt: NOW_SEC + 3n * DAY + 14_400n },
-        ]
-      : [],
+    withdrawals,
     validators,
     selectedValidator,
-    withdrawDelaySec: 7n * DAY,
+    withdrawDelaySec,
     selectValidator,
   };
 }

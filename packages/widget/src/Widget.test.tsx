@@ -1,9 +1,28 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { SafeStakeClient } from "safe-stake-core";
 import { Widget } from "./Widget.js";
 import { useWidgetStore } from "./store.js";
 import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";
+
+// Stub the client seam so the connected case yields a matured withdrawal
+// deterministically — the mock account's real on-chain queue is empty, and
+// per repo convention specific values are stubbed rather than read from RPC.
+// `claimableAt: 1n` (1970) is well past now → ClaimPanel marks it ready.
+vi.mock("./hooks/useSafeStakeClient.js", () => ({
+  useSafeStakeClient: () =>
+    ({
+      config: { chainId: 1 },
+      token: { getBalance: async () => 0n },
+      staking: {
+        getStake: async () => 0n,
+        getWithdrawDelay: async () => 604_800n,
+        getTotalValidatorStakes: async () => [],
+        getPendingWithdrawals: async () => [{ amount: 750n, claimableAt: 1n }],
+      },
+    }) as unknown as SafeStakeClient,
+}));
 
 describe("Widget", () => {
   // The store is module-global; reset shared UI state between cases.

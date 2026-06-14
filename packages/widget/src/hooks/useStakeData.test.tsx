@@ -7,16 +7,18 @@ import { useStakeData } from "./useStakeData.js";
 import { useWidgetStore } from "../store.js";
 import { WagmiHarness, mainnetConfig } from "../test/wagmi.js";
 
-// The wallet and staked balances are live reads via the bound core client —
-// stub the client seam; the rest of the hook stays real.
+// Every field is a live read via the bound core client — stub the client seam;
+// the rest of the hook stays real.
 const getBalance = vi.fn();
 const getStake = vi.fn();
+const getPendingWithdrawals = vi.fn();
+const getWithdrawDelay = vi.fn();
 vi.mock("./useSafeStakeClient.js", () => ({
   useSafeStakeClient: () =>
     ({
       config: { chainId: 1 },
       token: { getBalance },
-      staking: { getStake },
+      staking: { getStake, getPendingWithdrawals, getWithdrawDelay },
     }) as unknown as SafeStakeClient,
 }));
 
@@ -38,6 +40,11 @@ vi.mock("./useValidators.js", () => ({ useValidators: () => VALIDATORS }));
 
 const BALANCE = parseEther("12480.42");
 const STAKED = parseEther("8200");
+const WITHDRAWALS = [
+  { amount: parseEther("750"), claimableAt: 100n },
+  { amount: parseEther("1500"), claimableAt: 200n },
+];
+const WITHDRAW_DELAY = 604_800n; // 7 days
 
 const wrapper =
   (connected: boolean) =>
@@ -51,46 +58,49 @@ describe("useStakeData", () => {
     vi.clearAllMocks();
     getBalance.mockResolvedValue(BALANCE);
     getStake.mockResolvedValue(STAKED);
+    getPendingWithdrawals.mockResolvedValue(WITHDRAWALS);
+    getWithdrawDelay.mockResolvedValue(WITHDRAW_DELAY);
     useWidgetStore.setState({ selectedValidator: null });
   });
 
-  it("zeroes balances and withdrawals when disconnected", () => {
-    const { result } = renderHook(() => useStakeData(false), { wrapper: wrapper(false) });
+  it("zeroes account-scoped reads and withdrawals when disconnected", () => {
+    const { result } = renderHook(() => useStakeData(), { wrapper: wrapper(false) });
     expect(result.current.walletBalance).toBe(0n);
     expect(result.current.stakedBalance).toBe(0n);
     expect(result.current.withdrawals).toHaveLength(0);
     // Validators are always listed (they don't depend on the connection).
     expect(result.current.validators.length).toBeGreaterThan(0);
-    // The balance queries never fire without an account.
+    // The account-scoped queries never fire without an account.
     expect(getBalance).not.toHaveBeenCalled();
     expect(getStake).not.toHaveBeenCalled();
+    expect(getPendingWithdrawals).not.toHaveBeenCalled();
   });
 
-  it("populates balances and withdrawals when connected", async () => {
-    const { result } = renderHook(() => useStakeData(true), { wrapper: wrapper(true) });
-    // walletBalance and stakedBalance are on-chain reads; they resolve async.
+  it("reads the withdraw delay even while disconnected (contract-wide, no account)", async () => {
+    const { result } = renderHook(() => useStakeData(), { wrapper: wrapper(false) });
+    await waitFor(() => expect(result.current.withdrawDelaySec).toBe(WITHDRAW_DELAY));
+    expect(getWithdrawDelay).toHaveBeenCalled();
+  });
+
+  it("populates every field from the client when connected", async () => {
+    const { result } = renderHook(() => useStakeData(), { wrapper: wrapper(true) });
+    // Each field is an on-chain read; they resolve async.
     await waitFor(() => expect(result.current.walletBalance).toBe(BALANCE));
     await waitFor(() => expect(result.current.stakedBalance).toBe(STAKED));
+    await waitFor(() => expect(result.current.withdrawals).toEqual(WITHDRAWALS));
+    await waitFor(() => expect(result.current.withdrawDelaySec).toBe(WITHDRAW_DELAY));
     // The stake is read for the selected (default first) validator.
     expect(getStake).toHaveBeenCalledWith(
       expect.any(String),
       result.current.selectedValidator?.address,
     );
-    expect(result.current.withdrawals.length).toBeGreaterThan(0);
   });
 
   it("selectValidator() switches the active validator (first is the default)", () => {
-    const { result } = renderHook(() => useStakeData(true), { wrapper: wrapper(true) });
+    const { result } = renderHook(() => useStakeData(), { wrapper: wrapper(true) });
     expect(result.current.selectedValidator?.address).toBe(VALIDATORS[0].address);
     const second = result.current.validators[1]!;
     act(() => result.current.selectValidator(second.address));
     expect(result.current.selectedValidator?.address).toBe(second.address);
-  });
-
-  it("exposes exactly one matured (claimable) withdrawal when connected", () => {
-    const { result } = renderHook(() => useStakeData(true), { wrapper: wrapper(true) });
-    const nowSec = BigInt(Math.floor(Date.now() / 1000));
-    const matured = result.current.withdrawals.filter((w) => w.claimableAt <= nowSec);
-    expect(matured).toHaveLength(1);
   });
 });

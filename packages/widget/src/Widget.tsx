@@ -48,7 +48,7 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
   const setTab = useWidgetStore((s) => s.setTab);
   const resolvedMode = useWidgetStore((s) => s.resolvedMode);
   const { address, isConnected } = useConnection();
-  const data = useStakeData(isConnected);
+  const data = useStakeData();
 
   const state: StakeViewState = { connected: isConnected, account: address ?? null, ...data };
 
