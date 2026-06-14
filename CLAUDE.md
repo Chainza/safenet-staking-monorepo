@@ -56,10 +56,11 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   (`src/components/ui/*`) on Radix, so the widget also carries `@radix-ui/*`,
   `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react` as (exact-pinned)
   `dependencies`. Defaults to `theme="dark"`. Wallet **connection** is real (wagmi); the staking
-  **data** (`hooks/useStakeData.ts`) is being wired to live reads field by field — the wallet
-  balance (`useSafeBalance`), the staked balance (`useStakedBalance`) and the validator set
-  (`useValidators`) are real; the remaining fields are still local seed values gated on the
-  account. See **Wallet integration**, **On-chain data hooks** and
+  **data** (`hooks/useStakeData.ts`) is now **fully live** — every field maps to a core read via
+  its own query hook: wallet balance (`useSafeBalance`), staked balance (`useStakedBalance`),
+  validator set (`useValidators`), withdrawal queue (`useWithdrawals`) and unbonding delay
+  (`useWithdrawDelay`). `useStakeData` takes no arguments; the per-field hooks each gate on the
+  connection/chain internally. See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
@@ -157,9 +158,15 @@ widget's own `build:css` _and_ the website resolving it to source.
   `safeBalanceQueryKey`). Keys are namespaced under `"safe-stake"` and include the chain id
   (+ account where relevant) so they're collision-free in host apps and chain/account switches
   miss the old cache.
-- **Per-field hooks compose `useStakeData`.** Each on-chain field gets its own
-  query hook (`useSafeBalance` → `client.token.getBalance`, …) that `useStakeData` aggregates
-  for the panels; replace the remaining seed fields by adding hooks of the same shape.
+- **Per-field hooks compose `useStakeData`.** Each field gets its own query hook
+  (`useSafeBalance` → `client.token.getBalance`, `useStakedBalance` → `staking.getStake`,
+  `useWithdrawals` → `staking.getPendingWithdrawals`, `useWithdrawDelay` →
+  `staking.getWithdrawDelay`, `useValidators`) that `useStakeData` aggregates for the panels —
+  every field is live, none seeded. `useStakeData` supplies defaults (`0n`/`[]`) while a query is
+  disabled or in flight; new on-chain fields should follow the same hook shape.
+  `withdrawDelay` needs no account (a contract-wide param) so it reads even while disconnected;
+  `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
+  inferred tuple-array return.
 - **The validator set is hybrid (`hooks/useValidators.ts`).** The contract has no validator
   enumeration, so the _set_ comes from the official registry JSON
   (`safe-fndn/safenet-beta-data` → `assets/validator-info.json`, linked from
