@@ -1,6 +1,7 @@
 import { CircleCheck, Clock, Inbox } from "lucide-react";
 import { formatCountdown, formatToken } from "../lib/format.js";
 import { useDateNow } from "../hooks/useDateNow.js";
+import { cn } from "../lib/utils.js";
 import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
 import { Badge } from "./ui/badge.js";
@@ -62,14 +63,17 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
         return (
           <Card
             key={i}
-            className={`ss:flex ss:items-center ss:gap-2 ss:p-3 ${ready ? "ss:border-primary/30" : ""}`}
+            className={cn("ss:flex ss:items-center ss:gap-2 ss:p-3", {
+              "ss:border-primary/30": ready,
+            })}
           >
             <span
-              className={`ss:grid ss:size-8 ss:shrink-0 ss:place-items-center ss:rounded-lg ss:border ss:bg-background ${
+              className={cn(
+                "ss:grid ss:size-8 ss:shrink-0 ss:place-items-center ss:rounded-lg ss:border ss:bg-background",
                 ready
                   ? "ss:border-primary/30 ss:text-primary"
-                  : "ss:border-border ss:text-muted-foreground"
-              }`}
+                  : "ss:border-border ss:text-muted-foreground",
+              )}
               aria-hidden
             >
               {ready ? <CircleCheck className="ss:size-4" /> : <Clock className="ss:size-4" />}
@@ -81,7 +85,7 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
               </div>
               <Badge
                 variant={ready ? "success" : "outline"}
-                className={`ss:border-0 ss:px-0 ${ready ? "" : "ss:text-muted-foreground"}`}
+                className={cn("ss:border-0 ss:px-0", { "ss:text-muted-foreground": !ready })}
               >
                 {ready ? "Ready to claim" : `Unbonding · ${countdown} left`}
               </Badge>
