@@ -1,6 +1,7 @@
 import { CircleCheck, Clock, Inbox } from "lucide-react";
 import { formatCountdown, formatToken } from "../lib/format.js";
 import { useDateNow } from "../hooks/useDateNow.js";
+import { useClaim } from "../hooks/useClaim.js";
 import { cn } from "../lib/utils.js";
 import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
@@ -8,10 +9,13 @@ import { Badge } from "./ui/badge.js";
 import type { PanelProps } from "./StakePanel.js";
 
 /** Claim flow → `staking.claimWithdrawal()` once a queued withdrawal matures
- *  past the unbonding delay. Matured rows are claimable; the rest count down. */
+ *  past the unbonding delay. The contract settles the **queue head** (the oldest
+ *  matured entry) one at a time, so the panel exposes a single "Claim next"
+ *  action rather than per-row buttons; the rows are a read-only status list. */
 export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const { connected, withdrawals } = state;
   const nowMs = useDateNow();
+  const { mutate: claim, isPending, error } = useClaim();
 
   if (!connected || withdrawals.length === 0) {
     return (
@@ -37,6 +41,22 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const claimable = withdrawals
     .filter((w) => formatCountdown(w.claimableAt, nowMs) === null)
     .reduce((sum, w) => sum + w.amount, 0n);
+  const hasClaimable = claimable > 0n;
+
+  // `claimWithdrawal()` always settles the queue head, so a single button drives
+  // the whole panel: blocked while a claim is in flight or nothing has matured.
+  let label: string;
+  let canSubmit: boolean;
+  if (isPending) {
+    label = "Claiming…";
+    canSubmit = false;
+  } else if (!hasClaimable) {
+    label = "Nothing to claim yet";
+    canSubmit = false;
+  } else {
+    label = "Claim next";
+    canSubmit = true;
+  }
 
   return (
     <div className="ss:animate-rise ss:flex ss:flex-col ss:gap-2">
@@ -52,7 +72,7 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
         </div>
         <CircleCheck
           className={
-            claimable > 0n ? "ss:size-6 ss:text-primary" : "ss:size-6 ss:text-muted-foreground"
+            hasClaimable ? "ss:size-6 ss:text-primary" : "ss:size-6 ss:text-muted-foreground"
           }
         />
       </Card>
@@ -90,10 +110,24 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
                 {ready ? "Ready to claim" : `Unbonding · ${countdown} left`}
               </Badge>
             </span>
-            {ready && <Button size="sm">Claim</Button>}
           </Card>
         );
       })}
+
+      <Button
+        size="lg"
+        className="ss:mt-4 ss:w-full"
+        disabled={!canSubmit}
+        onClick={() => canSubmit && claim()}
+      >
+        {label}
+      </Button>
+
+      {error && (
+        <p className="ss:mt-2 ss:text-center ss:text-xs ss:text-error" role="alert">
+          Claim failed. Please try again.
+        </p>
+      )}
     </div>
   );
 }
