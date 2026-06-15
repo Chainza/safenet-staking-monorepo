@@ -54,13 +54,37 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
   const insufficient = amountWei > walletBalance;
   const needsApproval = allowance !== undefined && allowance < amountWei;
   const pretty = hasAmount ? Number(amount).toLocaleString("en-US") : "0.00";
-  const canSubmit =
-    connected &&
-    !wrongNetwork &&
-    hasAmount &&
-    !insufficient &&
-    selectedValidator !== undefined &&
-    !isPending;
+
+  // `label` and `canSubmit` are derived from the same cascade: the button only
+  // submits in the final two (ready) branches, gated on a selected validator
+  // and no in-flight tx; every earlier branch is a blocked state.
+  let label: string;
+  let canSubmit: boolean;
+  if (!connected) {
+    label = "Connect to stake";
+    canSubmit = false;
+  } else if (wrongNetwork) {
+    label = "Wrong Network";
+    canSubmit = false;
+  } else if (step === "approving") {
+    label = "Approving…";
+    canSubmit = false;
+  } else if (step === "staking") {
+    label = "Staking…";
+    canSubmit = false;
+  } else if (!hasAmount) {
+    label = "Enter an amount";
+    canSubmit = false;
+  } else if (insufficient) {
+    label = "Insufficient balance";
+    canSubmit = false;
+  } else if (needsApproval) {
+    label = `Approve & Stake ${pretty} ${symbol}`;
+    canSubmit = selectedValidator !== undefined && !isPending;
+  } else {
+    label = `Stake ${pretty} ${symbol}`;
+    canSubmit = selectedValidator !== undefined && !isPending;
+  }
 
   const submit = () => {
     if (!selectedValidator || !canSubmit) return;
@@ -69,22 +93,6 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
       { onSuccess: () => setAmount("") },
     );
   };
-
-  const label = !connected
-    ? "Connect to stake"
-    : wrongNetwork
-      ? "Wrong Network"
-      : step === "approving"
-        ? "Approving…"
-        : step === "staking"
-          ? "Staking…"
-          : !hasAmount
-            ? "Enter an amount"
-            : insufficient
-              ? "Insufficient balance"
-              : needsApproval
-                ? `Approve & Stake ${pretty} ${symbol}`
-                : `Stake ${pretty} ${symbol}`;
 
   return (
     <div className="ss:animate-rise">
