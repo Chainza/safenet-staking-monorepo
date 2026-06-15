@@ -1,7 +1,7 @@
 import "./styles.css";
 import { useConnection } from "wagmi";
 import { WidgetProviders } from "./providers/WidgetProviders.js";
-import { useWidgetStore, type TabKey } from "./store.js";
+import { useWidgetStore, type TabKey, type WidgetMode } from "./store.js";
 import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
 import { Header } from "./components/Header.js";
@@ -12,7 +12,7 @@ import { UnstakePanel } from "./components/UnstakePanel.js";
 import { ClaimPanel } from "./components/ClaimPanel.js";
 
 export type WidgetTheme = "light" | "dark";
-export type WidgetMode = "auto" | "standalone" | "inherit";
+export type { WidgetMode } from "./store.js";
 
 export interface WidgetProps {
   /** Visual theme. Defaults to "dark". */

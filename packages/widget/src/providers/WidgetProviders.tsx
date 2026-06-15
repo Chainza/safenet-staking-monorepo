@@ -1,10 +1,9 @@
 import { useContext, useLayoutEffect, type ReactNode } from "react";
 import { WagmiContext, WagmiProvider } from "wagmi";
 import { QueryClientContext, QueryClientProvider } from "@tanstack/react-query";
-import type { WidgetMode } from "../Widget.js";
 import { getStandaloneConfig } from "../wagmi/standaloneConfig.js";
 import { getQueryClient } from "../wagmi/queryClient.js";
-import { useWidgetStore } from "../store.js";
+import { useWidgetStore, type WidgetMode } from "../store.js";
 
 export interface WidgetProvidersProps {
   mode: WidgetMode;

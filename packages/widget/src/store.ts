@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import type { Address } from "viem";
 
+/** The widget's `mode` prop: `"auto"` detects a host wagmi provider and reuses
+ *  it (else standalone); `"standalone"`/`"inherit"` force one or the other. */
+export type WidgetMode = "auto" | "standalone" | "inherit";
+
 /** The integration mode after detection: whether the widget mounted its own
  *  wagmi stack ("standalone") or is reusing the host's ("inherit"). */
 export type ResolvedMode = "standalone" | "inherit";
