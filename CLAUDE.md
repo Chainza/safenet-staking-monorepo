@@ -167,6 +167,18 @@ widget's own `build:css` _and_ the website resolving it to source.
   `withdrawDelay` needs no account (a contract-wide param) so it reads even while disconnected;
   `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
   inferred tuple-array return.
+- **Writes are mutation hooks, one per flow.** A write flow is a `useMutation` hook
+  (`useSomeAction`) colocated with its reads, calling the bound `client.*` writes and waiting for
+  each tx with wagmi's `usePublicClient().waitForTransactionReceipt`; on success it
+  `queryClient.invalidateQueries` the reads the tx moves (use the exported key builders, or a
+  partial-key prefix to sweep every validator/account variant). **Stake — `hooks/useStake.ts`.**
+  SAFE's `stake(validator, amount)` takes **no permit signature**, so a short allowance forces a
+  separate `approve` tx first; the flow re-reads `token.getAllowance` at submit time (the cached
+  `useSafeAllowance` read may be stale) and sends `approve` → waits → `stake` → waits, exposing a
+  `step` (`"idle" | "approving" | "staking"`) for button copy. `useSafeAllowance`
+  (`hooks/useSafeAllowance.ts`, spender defaults to staking) is the read that drives the panel's
+  approve-vs-stake button label; it isn't folded into `useStakeData` (it's a flow detail, not
+  displayed data). Mutations never auto-retry (a write may have broadcast despite an error).
 - **Token metadata is read in one multicall.** `useSafeTokenMeta` (`hooks/useSafeTokenMeta.ts`)
   returns the full `useQuery` result whose `data` is `{ name, symbol, decimals }`, via
   `client.token.getMeta` → core's `token.getTokenMeta`, which **`publicClient.multicall`s**
