@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { parseUnits } from "viem";
+import { useChainId, useConnection } from "wagmi";
 import type { StakeViewState } from "../hooks/useStakeData.js";
 import { useSafeAllowance } from "../hooks/useSafeAllowance.js";
 import { useStake } from "../hooks/useStake.js";
@@ -41,13 +42,25 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
   const { data: allowance } = useSafeAllowance();
   const { mutate: stake, isPending, step, error } = useStake();
 
+  // The wallet sits on a different chain than the app targets — `useChainId` is
+  // the app's active config chain, `useConnection().chainId` the wallet's. A
+  // tx would hit the wrong deployment, so block the flow until they realign.
+  const appChainId = useChainId();
+  const { chainId: walletChainId } = useConnection();
+  const wrongNetwork = connected && walletChainId !== undefined && walletChainId !== appChainId;
+
   const amountWei = parseAmount(amount, decimals);
   const hasAmount = amountWei > 0n;
   const insufficient = amountWei > walletBalance;
   const needsApproval = allowance !== undefined && allowance < amountWei;
   const pretty = hasAmount ? Number(amount).toLocaleString("en-US") : "0.00";
   const canSubmit =
-    connected && hasAmount && !insufficient && selectedValidator !== undefined && !isPending;
+    connected &&
+    !wrongNetwork &&
+    hasAmount &&
+    !insufficient &&
+    selectedValidator !== undefined &&
+    !isPending;
 
   const submit = () => {
     if (!selectedValidator || !canSubmit) return;
@@ -59,17 +72,19 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
 
   const label = !connected
     ? "Connect to stake"
-    : step === "approving"
-      ? "Approving…"
-      : step === "staking"
-        ? "Staking…"
-        : !hasAmount
-          ? "Enter an amount"
-          : insufficient
-            ? "Insufficient balance"
-            : needsApproval
-              ? `Approve & Stake ${pretty} ${symbol}`
-              : `Stake ${pretty} ${symbol}`;
+    : wrongNetwork
+      ? "Wrong Network"
+      : step === "approving"
+        ? "Approving…"
+        : step === "staking"
+          ? "Staking…"
+          : !hasAmount
+            ? "Enter an amount"
+            : insufficient
+              ? "Insufficient balance"
+              : needsApproval
+                ? `Approve & Stake ${pretty} ${symbol}`
+                : `Stake ${pretty} ${symbol}`;
 
   return (
     <div className="ss:animate-rise">

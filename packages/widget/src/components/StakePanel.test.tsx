@@ -16,6 +16,15 @@ let allowance: bigint | undefined;
 vi.mock("../hooks/useStake.js", () => ({ useStake: () => stakeReturn }));
 vi.mock("../hooks/useSafeAllowance.js", () => ({ useSafeAllowance: () => ({ data: allowance }) }));
 
+// The panel reads the app's active chain (`useChainId`) and the wallet's chain
+// (`useConnection().chainId`) to flag a network mismatch; stub both.
+let appChainId = 1;
+let walletChainId: number | undefined = 1;
+vi.mock("wagmi", () => ({
+  useChainId: () => appChainId,
+  useConnection: () => ({ chainId: walletChainId }),
+}));
+
 const validator = { address: VALIDATOR, name: "Gnosis", totalStaked: parseEther("100") };
 
 function baseState(overrides: Partial<StakeViewState> = {}): StakeViewState {
@@ -42,12 +51,20 @@ describe("StakePanel", () => {
     vi.clearAllMocks();
     stakeReturn = { mutate: stakeMutate, isPending: false, step: "idle", error: null };
     allowance = 0n;
+    appChainId = 1;
+    walletChainId = 1;
   });
 
   it("prompts to connect (disabled) while disconnected", () => {
     renderPanel(baseState({ connected: false }));
     const button = screen.getByRole("button", { name: "Connect to stake" });
     expect(button).toHaveProperty("disabled", true);
+  });
+
+  it("flags a wrong network (disabled) when the wallet chain differs from the app", () => {
+    walletChainId = 137;
+    renderPanel(baseState());
+    expect(screen.getByRole("button", { name: "Wrong Network" })).toHaveProperty("disabled", true);
   });
 
   it("asks for an amount before one is entered", () => {
