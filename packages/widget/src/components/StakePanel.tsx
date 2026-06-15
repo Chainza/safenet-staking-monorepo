@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { parseUnits } from "viem";
-import { useChainId, useConnection } from "wagmi";
 import type { StakeViewState } from "../hooks/useStakeData.js";
 import { useSafeAllowance } from "../hooks/useSafeAllowance.js";
 import { useStake } from "../hooks/useStake.js";
+import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
@@ -42,12 +42,7 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
   const { data: allowance } = useSafeAllowance();
   const { mutate: stake, isPending, step, error } = useStake();
 
-  // The wallet sits on a different chain than the app targets — `useChainId` is
-  // the app's active config chain, `useConnection().chainId` the wallet's. A
-  // tx would hit the wrong deployment, so block the flow until they realign.
-  const appChainId = useChainId();
-  const { chainId: walletChainId } = useConnection();
-  const wrongNetwork = connected && walletChainId !== undefined && walletChainId !== appChainId;
+  const wrongNetwork = useWrongNetwork();
 
   const amountWei = parseAmount(amount, decimals);
   const hasAmount = amountWei > 0n;
