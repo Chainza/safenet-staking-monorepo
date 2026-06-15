@@ -18,13 +18,6 @@
     "circular": "madge --circular --extensions ts,tsx --ts-config tsconfig.base.json packages/core/src packages/widget/src apps/website/src",
     "clean": "turbo run clean && rm -rf node_modules"
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.1.2",
-      "onFail": "download"
-    }
-  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.4.1",
