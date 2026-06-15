@@ -8,3 +8,6 @@ build
 coverage
 *.tsbuildinfo
 .DS_Store
+
+# Local Claude Code tooling (launch config + machine-local settings)
+.claude
