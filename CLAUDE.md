@@ -178,7 +178,14 @@ widget's own `build:css` _and_ the website resolving it to source.
   `step` (`"idle" | "approving" | "staking"`) for button copy. `useSafeAllowance`
   (`hooks/useSafeAllowance.ts`, spender defaults to staking) is the read that drives the panel's
   approve-vs-stake button label; it isn't folded into `useStakeData` (it's a flow detail, not
-  displayed data). Mutations never auto-retry (a write may have broadcast despite an error).
+  displayed data). **Unstake — `hooks/useUnstake.ts`.** A single `initiateWithdrawal(validator,
+  amount)` tx (no approval) moving the stake into the withdrawal queue; on success it invalidates
+  the queue (`withdrawalsQueryKey`) plus the staked-balance/validator-stakes prefixes. Mutations
+  never auto-retry (a write may have broadcast despite an error). **Panel wiring is uniform** —
+  `StakePanel`/`UnstakePanel` share `parseAmount` (exported from `StakePanel`) and derive `label` +
+  `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
+  guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
+  `error`.
 - **Token metadata is read in one multicall.** `useSafeTokenMeta` (`hooks/useSafeTokenMeta.ts`)
   returns the full `useQuery` result whose `data` is `{ name, symbol, decimals }`, via
   `client.token.getMeta` → core's `token.getTokenMeta`, which **`publicClient.multicall`s**
