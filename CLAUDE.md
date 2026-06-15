@@ -12,6 +12,7 @@ All commands run from the repo root and fan out across workspaces via Turborepo.
 - `pnpm lint` — ESLint across all workspaces.
 - `pnpm test` — Vitest (`vitest run`) across packages.
 - `pnpm format` / `pnpm format:check` — Prettier write / check.
+- `pnpm circular` — madge scan for circular dependencies across all workspace `src` dirs.
 
 Scope to one workspace with `--filter`:
 
@@ -242,6 +243,12 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   (tsup injects `baseUrl` during d.ts builds). Strict mode + `noUncheckedIndexedAccess` are on.
 - **ESM-first**: root `package.json` is `type: module`; intra-package relative imports use
   explicit `.js` extensions (e.g. `import { X } from "./X.js"`) even from `.ts`/`.tsx` source.
+- **No circular dependencies.** `pnpm circular` (madge, `--ts-config tsconfig.base.json` so it
+  resolves the `.js`→`.ts` ESM imports) must report none; a dedicated `circular` CI job enforces it
+  on every push/PR. Note madge flags **type-only** import cycles too (they're erased at runtime but
+  still counted) — break them by relocating the shared type to a leaf module both sides already
+  import rather than importing it across the cycle (e.g. `WidgetMode` lives in `store.ts`, not
+  `Widget.tsx`, so `WidgetProviders` needn't import `Widget`).
 - **Tailwind v4 is CSS-first** — there is no `tailwind.config`. The widget configures Tailwind
   in `src/styles.css` via `@import "tailwindcss" prefix(ss);`; all widget
   utilities are `ss:`-prefixed to avoid collisions with host app styles. The widget builds CSS
