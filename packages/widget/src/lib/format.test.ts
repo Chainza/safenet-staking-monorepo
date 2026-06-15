@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseEther } from "viem";
-import { formatToken, truncateAddress, formatCountdown } from "./format.js";
+import { formatToken, parseAmount, truncateAddress, formatCountdown } from "./format.js";
 
 describe("formatToken", () => {
   it("formats base units with grouping and 2 fraction digits", () => {
@@ -13,6 +13,24 @@ describe("formatToken", () => {
 
   it("honors a custom fraction-digit count", () => {
     expect(formatToken(parseEther("4821000"), 18, 0)).toBe("4,821,000");
+  });
+});
+
+describe("parseAmount", () => {
+  it("parses a decimal string into base units", () => {
+    expect(parseAmount("12.5", 18)).toBe(parseEther("12.5"));
+  });
+
+  it("scales by the given decimals", () => {
+    expect(parseAmount("1.5", 6)).toBe(1_500_000n);
+  });
+
+  it("returns 0n for empty input", () => {
+    expect(parseAmount("", 18)).toBe(0n);
+  });
+
+  it("returns 0n for malformed input instead of throwing", () => {
+    expect(parseAmount("not-a-number", 18)).toBe(0n);
   });
 });
 

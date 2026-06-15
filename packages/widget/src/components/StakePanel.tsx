@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { parseUnits } from "viem";
 import type { StakeViewState } from "../hooks/useStakeData.js";
 import { useSafeAllowance } from "../hooks/useSafeAllowance.js";
 import { useStake } from "../hooks/useStake.js";
 import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
+import { parseAmount } from "../lib/format.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
@@ -16,15 +16,6 @@ export interface PanelProps {
 }
 
 const dayCount = (sec: bigint) => Number(sec / 86_400n);
-
-/** Parse a user-entered amount into base units; invalid/empty input → `0n`. */
-export function parseAmount(value: string, decimals: number): bigint {
-  try {
-    return value ? parseUnits(value, decimals) : 0n;
-  } catch {
-    return 0n;
-  }
-}
 
 /** Stake flow → `token.approve` (only if the allowance is short) then
  *  `staking.stake(validator, amount)`, both via `useStake`. */

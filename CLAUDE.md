@@ -182,8 +182,8 @@ widget's own `build:css` _and_ the website resolving it to source.
   amount)` tx (no approval) moving the stake into the withdrawal queue; on success it invalidates
   the queue (`withdrawalsQueryKey`) plus the staked-balance/validator-stakes prefixes. Mutations
   never auto-retry (a write may have broadcast despite an error). **Panel wiring is uniform** —
-  `StakePanel`/`UnstakePanel` share `parseAmount` (exported from `StakePanel`) and derive `label` +
-  `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
+  `StakePanel`/`UnstakePanel` share `parseAmount` (in `lib/format.ts`, the parse counterpart to
+  `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
   `error`.
 - **Token metadata is read in one multicall.** `useSafeTokenMeta` (`hooks/useSafeTokenMeta.ts`)
