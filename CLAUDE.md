@@ -272,8 +272,11 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 - **Libraries build with tsup** (dual ESM/CJS + `.d.ts`); the app builds with Vite. The widget
   externalizes `react`, `react-dom`, `wagmi`, `viem`.
 - **esbuild build script** must be approved to install cleanly — `onlyBuiltDependencies: [esbuild]`
-  in `pnpm-workspace.yaml`. Package manager is pnpm (pinned via both `packageManager` and
-  `devEngines`); the overlap warning between the two is harmless.
+  in `pnpm-workspace.yaml`. Package manager is pnpm, pinned via the `packageManager` field
+  only. **Do not re-add `devEngines.packageManager`**: with `onFail: "download"` pnpm tracks its
+  self-managed version as a *second YAML document* (`packageManagerDependencies` / `@pnpm/exe`)
+  prepended to `pnpm-lock.yaml`, which Vercel's lockfile parser rejects
+  (`ERR_PNPM_BROKEN_LOCKFILE: expected a single document`). Keep the lockfile single-document.
 - **Logging:** use `lib/logger.ts` (`logger.log`/`info`/`warn`/`error`) instead of `console.*` in
   the widget — it prefixes every line with `[safe-stake-widget]`, so callers never repeat it.
 - **Package names are not final.** `safe-stake-core` / `safe-stake-widget` (and the eventual
