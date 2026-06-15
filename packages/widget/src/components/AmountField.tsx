@@ -1,3 +1,4 @@
+import { formatUnits } from "viem";
 import { formatToken } from "../lib/format.js";
 import { Card } from "./ui/card.js";
 import { Input } from "./ui/input.js";
@@ -29,7 +30,10 @@ export function AmountField({
   decimals,
   disabled,
 }: AmountFieldProps) {
-  const setMax = () => onChange(formatToken(available, decimals, 2).replace(/,/g, ""));
+  // Emit the *exact* balance (full precision), not the 2-decimal display value —
+  // rounding the display up would push the parsed amount above the real balance
+  // and trip the "Insufficient balance" guard.
+  const setMax = () => onChange(formatUnits(available, decimals));
 
   return (
     <Card

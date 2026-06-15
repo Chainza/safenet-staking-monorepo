@@ -32,6 +32,15 @@ describe("AmountField", () => {
     expect(onChange).toHaveBeenCalledWith("12480.42");
   });
 
+  it("MAX emits exact precision, never the rounded-up display value", () => {
+    const onChange = vi.fn();
+    // 35.905 displays as "35.91" (rounds up); MAX must emit the exact balance so
+    // the parsed amount never exceeds it and trips "Insufficient balance".
+    render(<AmountField {...baseProps} available={parseEther("35.905")} onChange={onChange} />);
+    fireEvent.click(screen.getByText("MAX"));
+    expect(onChange).toHaveBeenCalledWith("35.905");
+  });
+
   it("scales the available balance by the token decimals", () => {
     // 6-decimal token: the same base-units value formats to a smaller amount.
     render(
