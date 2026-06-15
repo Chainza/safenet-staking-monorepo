@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
+import { useUnstake } from "../hooks/useUnstake.js";
+import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
-import type { PanelProps } from "./StakePanel.js";
+import { parseAmount, type PanelProps } from "./StakePanel.js";
 
 const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
-/** Unstake flow → `staking.initiateWithdrawal(validator, amount)`; tokens then
- *  sit in the withdrawal queue until the unbonding delay clears. */
+/** Unstake flow → `staking.initiateWithdrawal(validator, amount)` via `useUnstake`;
+ *  tokens then sit in the withdrawal queue until the unbonding delay clears. */
 export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
   const [amount, setAmount] = useState("");
   const {
@@ -20,7 +22,44 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
     selectValidator,
     withdrawDelaySec,
   } = state;
-  const hasAmount = Number(amount) > 0;
+
+  const wrongNetwork = useWrongNetwork();
+  const { mutate: unstake, isPending, error } = useUnstake();
+
+  const amountWei = parseAmount(amount, decimals);
+  const hasAmount = amountWei > 0n;
+  const insufficient = amountWei > stakedBalance;
+  const pretty = hasAmount ? Number(amount).toLocaleString("en-US") : "0.00";
+
+  let label: string;
+  let canSubmit: boolean;
+  if (!connected) {
+    label = "Connect to unstake";
+    canSubmit = false;
+  } else if (wrongNetwork) {
+    label = "Wrong Network";
+    canSubmit = false;
+  } else if (isPending) {
+    label = "Unstaking…";
+    canSubmit = false;
+  } else if (!hasAmount) {
+    label = "Enter an amount";
+    canSubmit = false;
+  } else if (insufficient) {
+    label = "Insufficient staked";
+    canSubmit = false;
+  } else {
+    label = `Unstake ${pretty} ${symbol}`;
+    canSubmit = selectedValidator !== undefined;
+  }
+
+  const submit = () => {
+    if (!selectedValidator || !canSubmit) return;
+    unstake(
+      { validator: selectedValidator.address, amount: amountWei },
+      { onSuccess: () => setAmount("") },
+    );
+  };
 
   return (
     <div className="ss:animate-rise">
@@ -32,7 +71,7 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
         availableLabel="Staked"
         symbol={symbol}
         decimals={decimals}
-        disabled={!connected}
+        disabled={!connected || isPending}
       />
 
       <ValidatorSelect
@@ -41,7 +80,7 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
         onValueChange={selectValidator}
         symbol={symbol}
         decimals={decimals}
-        disabled={!connected}
+        disabled={!connected || isPending}
       />
 
       <Summary>
@@ -56,7 +95,7 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
           {dayCount(withdrawDelaySec)} days
         </SummaryRow>
         <SummaryRow label="You will unstake">
-          {hasAmount ? Number(amount).toLocaleString("en-US") : "0.00"} {symbol}
+          {pretty} {symbol}
         </SummaryRow>
       </Summary>
 
@@ -64,14 +103,17 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
         variant="outline"
         size="lg"
         className="ss:mt-4 ss:w-full"
-        disabled={!connected || !hasAmount}
+        disabled={!canSubmit}
+        onClick={submit}
       >
-        {!connected
-          ? "Connect to unstake"
-          : !hasAmount
-            ? "Enter an amount"
-            : `Unstake ${Number(amount).toLocaleString("en-US")} ${symbol}`}
+        {label}
       </Button>
+
+      {error && (
+        <p className="ss:mt-2 ss:text-center ss:text-xs ss:text-error" role="alert">
+          Transaction failed. Please try again.
+        </p>
+      )}
     </div>
   );
 }

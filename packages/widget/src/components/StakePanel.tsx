@@ -18,7 +18,7 @@ export interface PanelProps {
 const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
 /** Parse a user-entered amount into base units; invalid/empty input → `0n`. */
-function parseAmount(value: string, decimals: number): bigint {
+export function parseAmount(value: string, decimals: number): bigint {
   try {
     return value ? parseUnits(value, decimals) : 0n;
   } catch {
