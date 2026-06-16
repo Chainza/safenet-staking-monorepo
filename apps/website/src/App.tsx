@@ -40,15 +40,11 @@ export default function App() {
         <span className="font-mono text-xs tracking-[0.22em] text-[var(--page-accent)]">
           SAFENET · STAKING
         </span>
-        <h1 className="mt-4 mb-4 text-[clamp(34px,6vw,52px)] font-bold tracking-tight">
+        <h1 className="mt-4 text-[clamp(24px,4vw,36px)] font-bold tracking-tight">
           Stake SAFE.
           <br />
           Secure the network.
         </h1>
-        <p className="mx-auto max-w-[460px] text-base text-[var(--page-muted)]">
-          Non-custodial staking for the SAFE token. Delegate to a validator, earn rewards, and
-          unstake on your own terms — all from one drop-in widget.
-        </p>
       </section>
 
       {/* Default mode="auto": the widget detects the host WagmiProvider above
