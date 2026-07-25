@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { TransactionHistory } from "./TransactionHistory.js";
-import type { StakerTransactions } from "../hooks/useStakerTransactions.js";
+import type {
+  StakeIncreasedEvent,
+  StakerTransactions,
+} from "../hooks/useStakerTransactions.js";
 import { WagmiHarness, mainnetConfig, TEST_ADDRESS } from "../test/wagmi.js";
 
 // Stub the data hook: the query itself is covered by
@@ -52,6 +56,19 @@ const EMPTY: StakerTransactions = {
   stakeIncreaseds: [],
   withdrawalInitiateds: [],
 };
+
+/** 12 stake events, oldest first by index — two pages of 10 + 2. */
+const MANY_STAKES: StakeIncreasedEvent[] = Array.from({ length: 12 }, (_, i) => ({
+  id: `0xaaa-${i}`,
+  staker: STAKER,
+  validator: "0x3d58a5475c1336b0a755c3abd298ceb9b7bb9cde",
+  amount: (BigInt(i + 1) * 10n ** 18n).toString(),
+  blockNumber: `${23000000 + i}`,
+  blockTimestamp: `${1750000000 + i}`,
+  transactionHash: STAKE_TX,
+}));
+
+const PAGED: StakerTransactions = { ...EMPTY, stakeIncreaseds: MANY_STAKES };
 
 const wrapper =
   (connected: boolean) =>
@@ -114,5 +131,44 @@ describe("TransactionHistory", () => {
     render(<TransactionHistory />, { wrapper: wrapper(true) });
 
     expect(await screen.findByText("No transactions yet")).toBeDefined();
+  });
+
+  it("hides the pagination controls when everything fits one page", async () => {
+    render(<TransactionHistory />, { wrapper: wrapper(true) });
+
+    await screen.findByRole("table");
+    expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Previous page" })).toBeNull();
+  });
+
+  it("paginates newest-first, 10 rows per page", async () => {
+    query = { data: PAGED, isPending: false, isError: false };
+    const user = userEvent.setup();
+    render(<TransactionHistory />, { wrapper: wrapper(true) });
+
+    // Header row + the first 10 of 12 rows; newest (12 SAFE) on top.
+    await waitFor(() => expect(screen.getAllByRole("row")).toHaveLength(11));
+    expect(screen.getAllByRole("row")[1]!.textContent).toContain("12.00 SAFE");
+    expect(screen.getByText("1 / 2")).toBeDefined();
+
+    const prev = screen.getByRole("button", { name: "Previous page" }) as HTMLButtonElement;
+    const next = screen.getByRole("button", { name: "Next page" }) as HTMLButtonElement;
+    expect(prev.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
+
+    await user.click(next);
+
+    // The two oldest rows remain; the boundaries flip.
+    expect(screen.getByText("2 / 2")).toBeDefined();
+    const rows = screen.getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    expect(rows[1]!.textContent).toContain("2.00 SAFE");
+    expect(rows[2]!.textContent).toContain("1.00 SAFE");
+    expect(prev.disabled).toBe(false);
+    expect(next.disabled).toBe(true);
+
+    await user.click(prev);
+    expect(screen.getByText("1 / 2")).toBeDefined();
+    expect(screen.getAllByRole("row")).toHaveLength(11);
   });
 });
