@@ -13,7 +13,7 @@ const getMock = vi.mocked(axios.get);
 
 const STAKER = TEST_ADDRESS.toLowerCase() as StakerTransactions["staker"];
 
-/** Indexer response as served: three lists, numerics as strings. */
+/** Indexer API response as served: three lists, numerics as strings. */
 const HISTORY: StakerTransactions = {
   staker: STAKER,
   limit: 50,

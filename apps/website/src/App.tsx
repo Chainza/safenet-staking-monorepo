@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Widget } from "safe-stake-widget";
+import { TransactionHistory } from "./components/TransactionHistory.js";
 import { applyTheme, getInitialTheme, storeTheme, type Theme } from "./theme.js";
 import { WalletControl } from "./WalletControl.js";
 
@@ -50,6 +51,10 @@ export default function App() {
       {/* Default mode="auto": the widget detects the host WagmiProvider above
           and runs in inherit mode, reusing this app's wallet connection. */}
       <Widget theme={theme} />
+
+      {/* Staking history for the connected account — a widget companion, not
+          part of it; renders nothing while disconnected. */}
+      <TransactionHistory />
     </main>
   );
 }
