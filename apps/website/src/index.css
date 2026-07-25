@@ -4,6 +4,8 @@
 @theme {
   --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* 600px — below it the header collapses into the burger menu. */
+  --breakpoint-xs: 37.5rem;
 }
 
 /* Page theme tokens, flipped by `data-theme` on <html> (set from theme.ts).

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import App from "./App.js";
@@ -90,6 +90,36 @@ describe("App", () => {
     const activityLink = await screen.findByRole("link", { name: "Activity" });
     expect(activityLink.getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("link", { name: "Stake" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  it("opens the burger menu with the wallet control, no nav while disconnected", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const burger = screen.getByRole("button", { name: "Open menu" });
+    expect(burger.getAttribute("aria-expanded")).toBe("false");
+    await user.click(burger);
+
+    const menu = within(document.getElementById("header-menu") as HTMLElement);
+    expect(menu.getByRole("button", { name: /connect wallet/i })).toBeDefined();
+    // The theme switcher stays inline in the header, not in the menu.
+    expect(menu.queryByRole("button", { name: /switch to/i })).toBeNull();
+    expect(menu.queryByRole("navigation")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Close menu" }));
+    expect(document.getElementById("header-menu")).toBeNull();
+  });
+
+  it("navigates from the burger menu once connected, closing it", async () => {
+    const user = userEvent.setup();
+    renderApp({ connected: true });
+
+    await user.click(await screen.findByRole("button", { name: "Open menu" }));
+    const menu = within(document.getElementById("header-menu") as HTMLElement);
+    await user.click(await menu.findByRole("link", { name: "Activity" }));
+
+    expect(screen.getByRole("heading", { name: /staking activity/i })).toBeDefined();
+    expect(document.getElementById("header-menu")).toBeNull();
   });
 
   it("toggles the theme and threads it to the widget", async () => {

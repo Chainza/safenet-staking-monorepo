@@ -12,17 +12,22 @@ function truncate(address: string): string {
 
 const buttonClass =
   "cursor-pointer rounded-full border border-[var(--page-border)] px-4 py-2 text-sm font-medium text-[var(--page-fg)] transition-colors hover:bg-[var(--page-muted)]/10";
-const menuClass =
-  "absolute right-0 mt-2 z-10 flex w-48 flex-col gap-1 rounded-xl border border-[var(--page-border)] bg-[var(--page-bg)] p-2 shadow-lg";
 const itemClass =
   "cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[var(--page-fg)] transition-colors hover:bg-[var(--page-muted)]/10";
+
+interface WalletControlProps {
+  /** Which edge of the control the dropdown hugs. `right` suits the header's
+   *  right corner; the burger menu passes `left` (its button sits flush left). */
+  menuAlign?: "left" | "right";
+}
 
 /**
  * The website's own connect / disconnect control, built directly on wagmi hooks.
  * The widget runs in inherit mode here (it reuses this host config), so the host
  * owns the connection UI — this is it.
  */
-export function WalletControl() {
+export function WalletControl({ menuAlign = "right" }: WalletControlProps) {
+  const menuClass = `absolute ${menuAlign === "right" ? "right-0" : "left-0"} mt-2 z-10 flex w-48 flex-col gap-1 rounded-xl border border-[var(--page-border)] bg-[var(--page-bg)] p-2 shadow-lg`;
   // wagmi v3: useConnection replaces useAccount; use the mutations' `mutate`.
   const { address, isConnected } = useConnection();
   const connectors = useConnectors();
