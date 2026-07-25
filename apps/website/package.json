@@ -8,26 +8,33 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "5.100.14",
     "@walletconnect/ethereum-provider": "2.23.9",
+    "axios": "1.18.1",
+    "clsx": "2.1.1",
     "lucide-react": "1.17.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "safe-stake-widget": "workspace:*",
+    "tailwind-merge": "3.6.0",
     "viem": "2.51.3",
     "wagmi": "3.6.16"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.0",
+    "@testing-library/react": "16.3.2",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "jsdom": "29.1.1",
     "tailwindcss": "4.3.0",
     "typescript": "6.0.3",
     "vite": "8.0.14",
-    "vite-plugin-node-polyfills": "0.28.0"
+    "vite-plugin-node-polyfills": "0.28.0",
+    "vitest": "4.1.7"
   }
 }
