@@ -62,7 +62,7 @@ describe("App", () => {
     renderApp({ connected: true });
 
     await user.click(await screen.findByRole("link", { name: "Activity" }));
-    expect(screen.getByRole("heading", { name: /staking activity/i })).toBeDefined();
+    expect(screen.getByText("SAFENET · ACTIVITY")).toBeDefined();
     expect(screen.queryByTestId("widget")).toBeNull();
 
     await user.click(screen.getByRole("link", { name: "Stake" }));
@@ -72,7 +72,7 @@ describe("App", () => {
   it("renders the Activity page on a direct /activity visit while connected", async () => {
     renderApp({ connected: true, initialPath: "/activity" });
 
-    expect(await screen.findByRole("heading", { name: /staking activity/i })).toBeDefined();
+    expect(await screen.findByText("SAFENET · ACTIVITY")).toBeDefined();
   });
 
   it("redirects /activity to the Stake page while disconnected", async () => {
@@ -80,7 +80,7 @@ describe("App", () => {
 
     expect(await screen.findByTestId("widget")).toBeDefined();
     await waitFor(() =>
-      expect(screen.queryByRole("heading", { name: /staking activity/i })).toBeNull(),
+      expect(screen.queryByText("SAFENET · ACTIVITY")).toBeNull(),
     );
   });
 
@@ -118,7 +118,7 @@ describe("App", () => {
     const menu = within(document.getElementById("header-menu") as HTMLElement);
     await user.click(await menu.findByRole("link", { name: "Activity" }));
 
-    expect(screen.getByRole("heading", { name: /staking activity/i })).toBeDefined();
+    expect(screen.getByText("SAFENET · ACTIVITY")).toBeDefined();
     expect(document.getElementById("header-menu")).toBeNull();
   });
 
