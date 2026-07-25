@@ -19,15 +19,15 @@ export default function App() {
   };
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header theme={theme} onToggleTheme={toggleTheme} />
 
-      <main className="flex min-h-screen flex-col items-center justify-center gap-12 px-6 pb-16 pt-28">
+      <main className="flex flex-1 flex-col items-center justify-center gap-12 px-6 py-16">
         <Routes>
           <Route path="/" element={<StakePage theme={theme} />} />
           <Route path="/activity" element={<ActivityPage />} />
         </Routes>
       </main>
-    </>
+    </div>
   );
 }
