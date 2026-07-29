@@ -277,6 +277,14 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   self-managed version as a *second YAML document* (`packageManagerDependencies` / `@pnpm/exe`)
   prepended to `pnpm-lock.yaml`, which Vercel's lockfile parser rejects
   (`ERR_PNPM_BROKEN_LOCKFILE: expected a single document`). Keep the lockfile single-document.
+- **Vercel deploys from `apps/website` as the project Root Directory**, so the live
+  `vercel.json` is `apps/website/vercel.json` — a repo-root `vercel.json` is silently ignored;
+  never add one. That file must stay **self-contained** (framework `null`, install/build/output
+  *and* the SPA-fallback `rewrites` to `/index.html`): once a `vercel.json` exists in the root
+  directory, missing fields fall back to framework defaults (which broke the build with a wrong
+  `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
+  `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
+  from there because pnpm and turbo walk up to the workspace root.
 - **Logging:** use `lib/logger.ts` (`logger.log`/`info`/`warn`/`error`) instead of `console.*` in
   the widget — it prefixes every line with `[safe-stake-widget]`, so callers never repeat it.
 - **Package names are not final.** `safe-stake-core` / `safe-stake-widget` (and the eventual
