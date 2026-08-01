@@ -6,6 +6,7 @@ import {
   type SafeStakeConfigInput,
 } from "./config.js";
 import type { ConnectedWalletClient } from "./types.js";
+import * as rewards from "./rewards.js";
 import * as staking from "./staking.js";
 import * as token from "./token.js";
 
@@ -162,6 +163,30 @@ export function createSafeStakeClient(params: CreateSafeStakeClientParams) {
       encodeTransfer: token.encodeTransfer,
       encodeTransferFrom: token.encodeTransferFrom,
       encodePermit: token.encodePermit,
+    },
+
+    rewards: {
+      // reads
+      getMerkleRoot: () => rewards.getMerkleRoot(publicClient, config),
+      getCumulativeClaimed: (account: Address) =>
+        rewards.getCumulativeClaimed(publicClient, config, account),
+      // writes (send)
+      claim: (
+        account: Address,
+        cumulativeAmount: bigint,
+        expectedMerkleRoot: Hex,
+        merkleProof: readonly Hex[],
+      ) =>
+        rewards.claim(
+          requireWallet(),
+          config,
+          account,
+          cumulativeAmount,
+          expectedMerkleRoot,
+          merkleProof,
+        ),
+      // writes (encode)
+      encodeClaim: rewards.encodeClaim,
     },
   };
 }

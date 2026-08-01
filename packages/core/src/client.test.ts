@@ -39,6 +39,7 @@ describe("createSafeStakeClient", () => {
       addresses: {
         staking: "0x1111111111111111111111111111111111111111",
         token: "0x2222222222222222222222222222222222222222",
+        merkleDrop: "0x3333333333333333333333333333333333333333",
       },
     });
     const sdk = createSafeStakeClient({ publicClient: client, config: resolved });
@@ -75,6 +76,19 @@ describe("createSafeStakeClient", () => {
     // fail-fast: the wallet guard throws synchronously when the method is called
     expect(() => sdk.staking.stake(VALIDATOR, 100n)).toThrow(/walletClient/i);
     expect(() => sdk.token.approve(100n)).toThrow(/walletClient/i);
+    const ROOT = `0x${"aa".repeat(32)}` as const;
+    expect(() => sdk.rewards.claim(STAKER, 100n, ROOT, [])).toThrow(/walletClient/i);
+  });
+
+  it("exposes the rewards group bound to the MerkleDrop deployment", async () => {
+    const { client, readContract } = makePublicClient(500n);
+    const sdk = createSafeStakeClient({ publicClient: client });
+    await expect(sdk.rewards.getCumulativeClaimed(STAKER)).resolves.toBe(500n);
+    expect(readContract.mock.calls[0]![0]).toMatchObject({
+      address: sdk.config.addresses.merkleDrop,
+      functionName: "cumulativeClaimed",
+      args: [STAKER],
+    });
   });
 
   it("exposes pure encode helpers regardless of wallet client", () => {

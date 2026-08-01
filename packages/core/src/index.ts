@@ -16,11 +16,12 @@ export {
 export type { ConnectedWalletClient, PendingWithdrawal, TokenMeta, Address } from "./types.js";
 
 // ABIs.
-export { stakingAbi, erc20Abi, erc20PermitAbi } from "./abi/index.js";
+export { stakingAbi, erc20Abi, erc20PermitAbi, merkleDropAbi } from "./abi/index.js";
 
 // Per-method utilities (standalone, tree-shakable).
 export * as staking from "./staking.js";
 export * as token from "./token.js";
+export * as rewards from "./rewards.js";
 
 // Factory client (ergonomic, pre-bound) — the surface the widget mainly uses.
 export {

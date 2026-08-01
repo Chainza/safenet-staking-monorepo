@@ -2,11 +2,13 @@ import { getAddress, type Address } from "viem";
 
 /**
  * Addresses of the on-chain contracts the core library interacts with, for a
- * single chain. Both `staking` and `token` are required.
+ * single chain. All three are required: `staking`, `token` and `merkleDrop`
+ * (the rewards distributor).
  */
 export interface ContractAddresses {
   staking: Address;
   token: Address;
+  merkleDrop: Address;
 }
 
 /** Fully-resolved configuration consumed by the utility functions. */
@@ -39,6 +41,7 @@ export const KNOWN_DEPLOYMENTS: Record<number, Partial<ContractAddresses>> = {
   1: {
     staking: "0x115E78f160e1E3eF163B05C84562Fa16fA338509",
     token: "0x5aFE3855358E112B5647B952709E6165e1c1eEEe",
+    merkleDrop: "0xe5139Fc0FB8eae81e30d8a85C22E88c6757120f2",
   },
 };
 
@@ -62,10 +65,16 @@ export function resolveConfig(input: SafeStakeConfigInput = {}): SafeStakeConfig
   if (!merged.token) {
     throw new Error(`No token address for chain ${chainId}. Pass addresses.token to override.`);
   }
+  if (!merged.merkleDrop) {
+    throw new Error(
+      `No merkleDrop address for chain ${chainId}. Pass addresses.merkleDrop to override.`,
+    );
+  }
 
   const addresses: ContractAddresses = {
     staking: getAddress(merged.staking),
     token: getAddress(merged.token),
+    merkleDrop: getAddress(merged.merkleDrop),
   };
 
   return { chainId, addresses };
@@ -78,6 +87,7 @@ export function isResolvedConfig(
   return (
     typeof (config as SafeStakeConfig).chainId === "number" &&
     !!(config as SafeStakeConfig).addresses?.staking &&
-    !!(config as SafeStakeConfig).addresses?.token
+    !!(config as SafeStakeConfig).addresses?.token &&
+    !!(config as SafeStakeConfig).addresses?.merkleDrop
   );
 }
