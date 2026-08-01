@@ -10,7 +10,7 @@ export type WidgetMode = "auto" | "standalone" | "inherit";
 export type ResolvedMode = "standalone" | "inherit";
 
 /** The active flow tab. */
-export type TabKey = "stake" | "unstake" | "claim";
+export type TabKey = "stake" | "unstake" | "claim" | "rewards";
 
 interface WidgetStore {
   /** Set by `WidgetProviders` once the host contexts have been probed. */

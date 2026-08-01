@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs.j
 import { StakePanel } from "./components/StakePanel.js";
 import { UnstakePanel } from "./components/UnstakePanel.js";
 import { ClaimPanel } from "./components/ClaimPanel.js";
+import { RewardsPanel } from "./components/RewardsPanel.js";
 
 export type WidgetTheme = "light" | "dark";
 export type { WidgetMode } from "./store.js";
@@ -68,6 +69,7 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
             <TabsTrigger value="stake">stake</TabsTrigger>
             <TabsTrigger value="unstake">unstake</TabsTrigger>
             <TabsTrigger value="claim">claim</TabsTrigger>
+            <TabsTrigger value="rewards">rewards</TabsTrigger>
           </TabsList>
           <TabsContent value="stake">
             <StakePanel state={state} symbol={symbol} decimals={decimals} />
@@ -77,6 +79,9 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
           </TabsContent>
           <TabsContent value="claim">
             <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
+          </TabsContent>
+          <TabsContent value="rewards">
+            <RewardsPanel state={state} symbol={symbol} decimals={decimals} />
           </TabsContent>
         </Tabs>
 

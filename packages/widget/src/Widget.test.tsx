@@ -13,6 +13,7 @@ import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";
 vi.mock("./hooks/useSafeStakeClient.js", () => ({
   useSafeStakeClient: () =>
     ({
+      // No reward proof for the mock account (real 404) → rewards reads stay disabled.
       config: { chainId: 1 },
       token: {
         getBalance: async () => 0n,
@@ -55,6 +56,9 @@ describe("Widget", () => {
 
     await user.click(screen.getByRole("tab", { name: "claim" }));
     expect(screen.getByText(/No pending withdrawals/)).toBeDefined();
+
+    await user.click(screen.getByRole("tab", { name: "rewards" }));
+    expect(screen.getByText(/No rewards yet/)).toBeDefined();
   });
 
   it("reuses a host wagmi config (inherit) without its own connect control", async () => {
