@@ -18,7 +18,14 @@ export function useSafeStakeClient(): SafeStakeClient | undefined {
   const { data: walletClient } = useWalletClient();
 
   const deployment = KNOWN_DEPLOYMENTS[chainId];
-  if (publicClient === undefined || !deployment?.staking || !deployment.token) return undefined;
+  if (
+    publicClient === undefined ||
+    !deployment?.staking ||
+    !deployment.token ||
+    !deployment.merkleDrop
+  ) {
+    return undefined;
+  }
 
   return createSafeStakeClient({ publicClient, walletClient, config: { chainId } });
 }
