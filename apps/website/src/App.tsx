@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router";
+import { Footer } from "./components/Footer.js";
 import { Header } from "./components/Header.js";
 import { ActivityPage } from "./pages/ActivityPage.js";
 import { StakePage } from "./pages/StakePage.js";
@@ -30,6 +31,8 @@ export default function App() {
           <Route path="/activity" element={<ActivityPage />} />
         </Routes>
       </main>
+
+      <Footer />
     </div>
   );
 }
