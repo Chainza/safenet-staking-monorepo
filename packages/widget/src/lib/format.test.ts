@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parseEther } from "viem";
-import { formatToken, parseAmount, truncateAddress, formatCountdown } from "./format.js";
+import {
+  formatToken,
+  formatPercent,
+  parseAmount,
+  truncateAddress,
+  formatCountdown,
+} from "./format.js";
 
 describe("formatToken", () => {
   it("formats base units with grouping and 2 fraction digits", () => {
@@ -13,6 +19,20 @@ describe("formatToken", () => {
 
   it("honors a custom fraction-digit count", () => {
     expect(formatToken(parseEther("4821000"), 18, 0)).toBe("4,821,000");
+  });
+});
+
+describe("formatPercent", () => {
+  it("formats a fraction as a percentage, dropping trailing zeros", () => {
+    expect(formatPercent(0.05)).toBe("5%");
+  });
+
+  it("rounds to 1 fraction digit by default", () => {
+    expect(formatPercent(0.9914893617021276)).toBe("99.1%");
+  });
+
+  it("honors a custom fraction-digit count", () => {
+    expect(formatPercent(0.99149, 2)).toBe("99.15%");
   });
 });
 

@@ -9,11 +9,15 @@ const VALIDATORS: Validator[] = [
     address: "0x3D58a5475c1336b0A755c3aBd298CeB9b7BB9CDe",
     name: "Gnosis",
     totalStaked: parseEther("100"),
+    commission: 0.05,
+    participationRate14d: 0.9914,
   },
   {
     address: "0x7B0A8EFA45dE81F11F2846EC28259B62155a2b37",
     name: "Greenfield",
     totalStaked: parseEther("50"),
+    commission: 0.1,
+    participationRate14d: 0.9965,
   },
 ];
 
@@ -32,6 +36,21 @@ describe("ValidatorSelect", () => {
     expect(trigger.textContent).toContain("Greenfield");
     expect(trigger.textContent).toContain("0x7B0A…2b37".slice(0, 6)); // truncated address prefix
     expect(trigger.textContent).toContain("50");
+  });
+
+  it("shows the selected validator's commission and 14d participation", () => {
+    render(
+      <ValidatorSelect
+        validators={VALIDATORS}
+        value={VALIDATORS[1]!.address}
+        onValueChange={vi.fn()}
+        symbol="SAFE"
+        decimals={18}
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Validator" });
+    expect(trigger.textContent).toContain("10% fee");
+    expect(trigger.textContent).toContain("99.7% uptime");
   });
 
   it("falls back to the first validator when the value is unknown", () => {

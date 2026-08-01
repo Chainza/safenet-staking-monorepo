@@ -18,6 +18,14 @@ export function parseAmount(value: string, decimals: number): bigint {
   }
 }
 
+/** Format a fraction (0.05 → "5%", 0.9915 → "99.2%") for display. */
+export function formatPercent(fraction: number, maxFractionDigits = 1): string {
+  return fraction.toLocaleString("en-US", {
+    style: "percent",
+    maximumFractionDigits: maxFractionDigits,
+  });
+}
+
 /** Truncate an address to `0x1234…cdef` form. */
 export function truncateAddress(address: Address | string, lead = 6, tail = 4): string {
   if (address.length <= lead + tail) return address;

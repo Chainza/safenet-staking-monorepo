@@ -1,5 +1,5 @@
 import type { Validator } from "../hooks/useValidators.js";
-import { formatToken, truncateAddress } from "../lib/format.js";
+import { formatPercent, formatToken, truncateAddress } from "../lib/format.js";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select.js";
 import type { Address } from "safe-stake-core";
 
@@ -12,6 +12,21 @@ export interface ValidatorSelectProps {
   /** Token decimals — scales each validator's total staked for display. */
   decimals: number;
   disabled?: boolean;
+}
+
+/** Right-aligned registry stats: commission and 14-day participation rate. */
+function ValidatorStats({ validator }: { validator: Validator }) {
+  return (
+    <span className="ss:shrink-0 ss:text-right ss:text-xs">
+      <span className="ss:block" title="Commission">
+        {formatPercent(validator.commission)} <span className="ss:text-muted-foreground">fee</span>
+      </span>
+      <span className="ss:block" title="14-day participation rate">
+        {formatPercent(validator.participationRate14d)}{" "}
+        <span className="ss:text-muted-foreground">uptime</span>
+      </span>
+    </span>
+  );
 }
 
 /** Validator picker backed by a shadcn Select over the live validator set. */
@@ -41,20 +56,27 @@ export function ValidatorSelect({
       disabled={disabled}
     >
       <SelectTrigger className="ss:mt-2" aria-label="Validator">
-        <span className="ss:flex ss:min-w-0 ss:items-center ss:gap-2">
-          <span
-            className="ss:grid ss:size-8 ss:shrink-0 ss:place-items-center ss:rounded-full ss:bg-accent/15 ss:text-xs ss:font-semibold ss:text-accent-strong"
-            aria-hidden
-          >
-            {selected.name.charAt(0)}
-          </span>
-          <span className="ss:min-w-0">
-            <span className="ss:block ss:text-sm ss:font-semibold">{selected.name}</span>
-            <span className="ss:block ss:font-mono ss:text-xs ss:text-muted-foreground">
-              {truncateAddress(selected.address)} ·{" "}
-              {formatToken(selected.totalStaked, decimals, 0)} {symbol}
+        <span className="ss:flex ss:min-w-0 ss:flex-1 ss:items-center ss:justify-between ss:gap-2">
+          <span className="ss:flex ss:min-w-0 ss:items-center ss:gap-2">
+            <span
+              className="ss:grid ss:size-8 ss:shrink-0 ss:place-items-center ss:rounded-full ss:bg-accent/15 ss:text-xs ss:font-semibold ss:text-accent-strong"
+              aria-hidden
+            >
+              {selected.name.charAt(0)}
+            </span>
+            <span className="ss:min-w-0">
+              <span className="ss:block ss:text-sm ss:font-semibold">{selected.name}</span>
+              {/* Separate nowrap chunks so a narrow trigger wraps between
+                  address and amount instead of mid-line after the dot. */}
+              <span className="ss:flex ss:flex-wrap ss:gap-x-2 ss:font-mono ss:text-xs ss:text-muted-foreground">
+                <span className="ss:whitespace-nowrap">{truncateAddress(selected.address)}</span>
+                <span className="ss:whitespace-nowrap">
+                  {formatToken(selected.totalStaked, decimals, 0)} {symbol}
+                </span>
+              </span>
             </span>
           </span>
+          <ValidatorStats validator={selected} />
         </span>
       </SelectTrigger>
       <SelectContent>
