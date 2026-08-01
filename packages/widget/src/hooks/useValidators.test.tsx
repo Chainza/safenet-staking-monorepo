@@ -49,6 +49,10 @@ describe("useValidators", () => {
     expect(result.current.map((v) => v.name)).toEqual(["Gnosis", "Greenfield"]);
     expect(result.current.map((v) => v.address)).toEqual([GNOSIS, GREENFIELD]);
 
+    // Registry stats come through under their camelCased names.
+    expect(result.current[0]!.commission).toBe(0.05);
+    expect(result.current[0]!.participationRate14d).toBe(0.99);
+
     // Stake totals resolve per validator via the client.
     await waitFor(() => expect(result.current[0]!.totalStaked).toBe(100n));
     expect(result.current[1]!.totalStaked).toBe(200n);

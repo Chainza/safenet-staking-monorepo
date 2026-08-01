@@ -29,11 +29,15 @@ const VALIDATORS = [
     address: "0x3D58a5475c1336b0A755c3aBd298CeB9b7BB9CDe",
     name: "Gnosis",
     totalStaked: parseEther("100"),
+    commission: 0.05,
+    participationRate14d: 0.99,
   },
   {
     address: "0x7B0A8EFA45dE81F11F2846EC28259B62155a2b37",
     name: "Greenfield",
     totalStaked: parseEther("50"),
+    commission: 0.05,
+    participationRate14d: 0.99,
   },
 ] as const;
 vi.mock("./useValidators.js", () => ({ useValidators: () => VALIDATORS }));

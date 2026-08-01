@@ -17,7 +17,13 @@ vi.mock("../hooks/useUnstake.js", () => ({ useUnstake: () => unstakeReturn }));
 let wrongNetwork = false;
 vi.mock("../hooks/useWrongNetwork.js", () => ({ useWrongNetwork: () => wrongNetwork }));
 
-const validator = { address: VALIDATOR, name: "Gnosis", totalStaked: parseEther("100") };
+const validator = {
+  address: VALIDATOR,
+  name: "Gnosis",
+  totalStaked: parseEther("100"),
+  commission: 0.05,
+  participationRate14d: 0.99,
+};
 
 function baseState(overrides: Partial<StakeViewState> = {}): StakeViewState {
   return {

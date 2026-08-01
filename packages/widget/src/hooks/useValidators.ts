@@ -9,6 +9,10 @@ export interface Validator {
   name: string;
   /** Total SAFE delegated to this validator (base units). */
   totalStaked: bigint;
+  /** Validator fee on rewards, as a fraction (0.05 = 5%). */
+  commission: number;
+  /** Attestation participation over the last 14 days, as a fraction. */
+  participationRate14d: number;
 }
 
 /**
@@ -53,7 +57,7 @@ export function useValidators(): Validator[] {
   const { data: registry = [] } = useQuery({
     queryKey: validatorListQueryKey(),
     staleTime: 3_600_000,
-    queryFn: async (): Promise<{ address: Address; name: string }[]> => {
+    queryFn: async (): Promise<Omit<Validator, "totalStaked">[]> => {
       const response = await fetch(VALIDATOR_INFO_URL);
       if (!response.ok) {
         throw new Error(`validator registry fetch failed: HTTP ${response.status}`);
@@ -61,7 +65,12 @@ export function useValidators(): Validator[] {
       const infos: ValidatorInfo[] = await response.json();
       return infos
         .filter((info) => info.is_active)
-        .map((info) => ({ address: getAddress(info.address), name: info.label }));
+        .map((info) => ({
+          address: getAddress(info.address),
+          name: info.label,
+          commission: info.commission,
+          participationRate14d: info.participation_rate_14d,
+        }));
     },
   });
 
