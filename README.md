@@ -4,12 +4,14 @@ A permissionless, non-custodial SAFE staking stack, structured as three layered,
 useful artifacts:
 
 - **`packages/core`** (`safe-stake-core`) — a headless TypeScript library handling all staking
-  contract interaction (stake, unstake, claim) using **viem** directly. Framework-agnostic, no
-  React or wagmi dependency — usable from any JavaScript environment.
+  contract interaction (stake, unstake, claim withdrawals, claim rewards) using **viem**
+  directly. Framework-agnostic, no React or wagmi dependency — usable from any JavaScript
+  environment.
 - **`packages/widget`** (`safe-stake-widget`) — a React `<Widget />` built on the core
-  library. Supports **standalone** mode (manages its own wagmi config + wallet connection UI)
-  and **inherit** mode (consumes the host app's existing wagmi context). Themeable, styled with
-  Tailwind (prefixed to avoid collisions with host styles).
+  library, with stake / unstake / claim / rewards flows. Supports **standalone** mode (manages
+  its own wagmi config + wallet connection UI) and **inherit** mode (consumes the host app's
+  existing wagmi context). Themeable, styled with Tailwind (prefixed to avoid collisions with
+  host styles).
 - **`apps/website`** — the reference staking UI (Vite) consuming the widget.
 
 ## Prerequisites

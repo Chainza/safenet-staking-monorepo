@@ -37,16 +37,25 @@ independently publishable artifact; lower layers have no dependency on higher on
     local build/test.
   - **Three API layers:** typed ABIs (`stakingAbi` mirrors `safe-research/safenet`'s
     `contracts/src/Staking.sol` via `parseAbi`; `erc20Abi` is viem's built-in re-exported as the
-    single source of truth; `erc20PermitAbi` adds the EIP-2612 surface — docs
+    single source of truth; `erc20PermitAbi` adds the EIP-2612 surface; `merkleDropAbi` covers
+    the rewards MerkleDrop contract — docs
     https://docs.safefoundation.org/, repo https://github.com/safe-research/safenet); standalone
-    per-method functions grouped by contract (`staking.*` / `token.*`, covering every read/write
-    on each contract plus a pure `encode*` calldata builder for Safe/EIP-5792 batching); and an
+    per-method functions grouped by contract (`staking.*` / `token.*` / `rewards.*`, covering
+    every read/write on each contract plus a pure `encode*` calldata builder for Safe/EIP-5792
+    batching); and an
     ergonomic `createSafeStakeClient({ publicClient, walletClient?, config? })` factory that binds
-    client+config once. Writes both send a tx **and** expose `encode*`. (No rewards/MerkleDrop
-    module: the official repo has no such contract — reintroduce only when one ships upstream.)
+    client+config once. Writes both send a tx **and** expose `encode*`.
+  - **Rewards are a _cumulative_ MerkleDrop** (`rewards.ts`, mainnet
+    `0xe5139Fc0FB8eae81e30d8a85C22E88c6757120f2`): each published root commits to every account's
+    _lifetime_ reward total, and `claim(account, cumulativeAmount, expectedMerkleRoot, proof)`
+    transfers `cumulativeAmount - cumulativeClaimed(account)` — one proof per root covers all
+    rounds. `expectedMerkleRoot` makes a claim revert (`MerkleRootWasUpdated`) if the root rotates
+    between proof fetch and claim, so consumers must refetch the proof then. `merkleDrop` is
+    **required** in `ContractAddresses`, same as `staking`/`token` — `resolveConfig` throws when
+    it can't be determined for the chain.
   - **Chain id + addresses are dynamic and overridable.** `config` carries only `{ chainId,
-addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)` merges built-in
-    `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
+addresses: { staking, token, merkleDrop } }` (no RPC URL/transport). `resolveConfig(input?)`
+    merges built-in `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
     `getAddress`; defaults to mainnet.
 - **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
   on core. The `mode` prop has three values: **`"auto"` (default)** detects a host `WagmiProvider`
@@ -61,7 +70,9 @@ addresses: { staking, token } }` (no RPC URL/transport). `resolveConfig(input?)`
   its own query hook: wallet balance (`useSafeBalance`), staked balance (`useStakedBalance`),
   validator set (`useValidators`), withdrawal queue (`useWithdrawals`) and unbonding delay
   (`useWithdrawDelay`). `useStakeData` takes no arguments; the per-field hooks each gate on the
-  connection/chain internally. See **Wallet integration**, **On-chain data hooks** and
+  connection/chain internally. The widget has four tabs: **stake / unstake / claim / rewards**
+  ("claim" settles matured _withdrawals_; "rewards" claims MerkleDrop _staking rewards_ — see
+  **On-chain data hooks**). See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
@@ -191,13 +202,27 @@ widget's own `build:css` _and_ the website resolving it to source.
   (`hooks/useSafeAllowance.ts`, spender defaults to staking) is the read that drives the panel's
   approve-vs-stake button label; it isn't folded into `useStakeData` (it's a flow detail, not
   displayed data). **Unstake — `hooks/useUnstake.ts`.** A single `initiateWithdrawal(validator,
-  amount)` tx (no approval) moving the stake into the withdrawal queue; on success it invalidates
+amount)` tx (no approval) moving the stake into the withdrawal queue; on success it invalidates
   the queue (`withdrawalsQueryKey`) plus the staked-balance/validator-stakes prefixes. Mutations
   never auto-retry (a write may have broadcast despite an error). **Panel wiring is uniform** —
   `StakePanel`/`UnstakePanel` share `parseAmount` (in `lib/format.ts`, the parse counterpart to
   `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
   `error`.
+- **Rewards are hybrid like validators: an off-chain proof + on-chain counters.**
+  `useRewardProof` (`hooks/useRewardProof.ts`) fetches the account's proof JSON from the official
+  registry (`safe-fndn/safenet-beta-data` → `assets/rewards/proofs/…`, sharded by the first four
+  address bytes, filename lowercased); a 404 resolves to `null` (never accrued rewards) and the
+  query key is account-scoped, chain-independent. `useRewards` (`hooks/useRewards.ts`) combines
+  it with two on-chain reads (`cumulativeClaimed(account)` + `merkleRoot()`, keys
+  `cumulativeClaimedQueryKey`/`merkleRootQueryKey`) into `{ claimable, totalClaimed, rootStale,
+canClaim }` — `claimable` = proof's cumulative amount − claimed counter; `rootStale` (on-chain
+  root ≠ proof's root, a claim would revert) and a `null` proof path both block `canClaim`. Both
+  reads gate on a fetched proof _and_ a chain with a known deployment. **Claim rewards —
+  `hooks/useClaimRewards.ts`.** One no-variable mutation sending `rewards.claim` with the proof's
+  values; on success it invalidates the claimed counter, wallet balance and the proof itself.
+  `RewardsPanel` renders it (empty state without a proof; `kycAmount`/`kyc` in the proof surface
+  a compliance-pending note).
 - **Token metadata is read in one multicall.** `useSafeTokenMeta` (`hooks/useSafeTokenMeta.ts`)
   returns the full `useQuery` result whose `data` is `{ name, symbol, decimals }`, via
   `client.token.getMeta` → core's `token.getTokenMeta`, which **`publicClient.multicall`s**
@@ -207,7 +232,7 @@ widget's own `build:css` _and_ the website resolving it to source.
   id alone. The exported `SAFE_TOKEN_META_FALLBACK` (`{ "Safe Token", "SAFE", 18 }`) is seeded as
   **`initialData`** (not `placeholderData`) so `data` is typed **non-nullable** and survives an
   error — the consumer destructures it directly (`const { data: { symbol, decimals } } =
-  useSafeTokenMeta()`), no default needed. To stop `initialData` from pinning the seed (the widget
+useSafeTokenMeta()`), no default needed. To stop `initialData` from pinning the seed (the widget
   globally sets `refetchOnMount: false` + `staleTime: 30s`), the query stamps
   `initialDataUpdatedAt: 0` (always stale) and overrides `refetchOnMount: "always"`, so the real
   metadata is read on mount and re-read on a chain (query-key) switch. **Batch related
@@ -285,13 +310,13 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 - **esbuild build script** must be approved to install cleanly — `onlyBuiltDependencies: [esbuild]`
   in `pnpm-workspace.yaml`. Package manager is pnpm, pinned via the `packageManager` field
   only. **Do not re-add `devEngines.packageManager`**: with `onFail: "download"` pnpm tracks its
-  self-managed version as a *second YAML document* (`packageManagerDependencies` / `@pnpm/exe`)
+  self-managed version as a _second YAML document_ (`packageManagerDependencies` / `@pnpm/exe`)
   prepended to `pnpm-lock.yaml`, which Vercel's lockfile parser rejects
   (`ERR_PNPM_BROKEN_LOCKFILE: expected a single document`). Keep the lockfile single-document.
 - **Vercel deploys from `apps/website` as the project Root Directory**, so the live
   `vercel.json` is `apps/website/vercel.json` — a repo-root `vercel.json` is silently ignored;
   never add one. That file must stay **self-contained** (framework `null`, install/build/output
-  *and* the SPA-fallback `rewrites` to `/index.html`): once a `vercel.json` exists in the root
+  _and_ the SPA-fallback `rewrites` to `/index.html`): once a `vercel.json` exists in the root
   directory, missing fields fall back to framework defaults (which broke the build with a wrong
   `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
   `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
