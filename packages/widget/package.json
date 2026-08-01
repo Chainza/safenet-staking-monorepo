@@ -27,6 +27,8 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "@safe-global/safe-apps-provider": "~0.18.6",
+    "@safe-global/safe-apps-sdk": "^9.1.0",
     "@tanstack/react-query": ">=5",
     "@walletconnect/ethereum-provider": "^2.21.1",
     "react": "^19.0.0",
@@ -35,6 +37,12 @@
     "wagmi": "^3.0.0"
   },
   "peerDependenciesMeta": {
+    "@safe-global/safe-apps-provider": {
+      "optional": true
+    },
+    "@safe-global/safe-apps-sdk": {
+      "optional": true
+    },
     "@walletconnect/ethereum-provider": {
       "optional": true
     }
