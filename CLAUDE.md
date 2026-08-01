@@ -108,8 +108,9 @@ widget's own `build:css` _and_ the website resolving it to source.
 - **Standalone config — `src/wagmi/standaloneConfig.ts`** is a **module-scoped singleton** cached
   by `walletConnectProjectId` (created via `getStandaloneConfig`, never in render — no `useMemo`).
   Mainnet only; connectors are `injected` + `walletConnect` (the latter only when a projectId is
-  passed; otherwise injected-only with a one-time warning). `multiInjectedProviderDiscovery` is
-  **off** so the connector list stays the intended two entries. **Chains come from
+  passed; otherwise injected-only with a one-time warning) + `safe` (only when embedded in an
+  iframe — see the Safe-connector bullet below). `multiInjectedProviderDiscovery` is
+  **off** so the connector list stays the intended entries. **Chains come from
   `src/wagmi/supportedChains.ts`** (the single source of truth, re-exporting from `wagmi/chains`)
   — import chains from there, never directly from `wagmi/chains`. `queryClient` is likewise a
   module singleton. `react`/`react-dom`/`wagmi`/`viem`/`@tanstack/react-query` are **peer deps**
@@ -127,6 +128,16 @@ widget's own `build:css` _and_ the website resolving it to source.
      mutation) — `WalletControl` surfaces connect errors (console + inline message) so this
      isn't invisible. (The `@reown/appkit` build script pulled in transitively is declined via
      `allowBuilds` in `pnpm-workspace.yaml`.)
+- **Safe connector (Safe App support).** Both wagmi configs (widget standalone + website host)
+  include wagmi's built-in `safe` connector, but **only when running inside an iframe** — the
+  context Safe{Wallet} runs Safe Apps in. Outside one the connector can never produce a provider
+  (`getProvider()` returns `undefined`), so including it unconditionally would show a dead
+  "Safe" entry in the picker. The widget's check lives in `src/lib/isIframe.ts` (same
+  `window.parent !== window` test the connector itself uses); the website inlines it in
+  `src/wagmi.ts`. Like WalletConnect, `@wagmi/connectors` lazy-imports the Safe SDK and does not
+  bundle it, so **`@safe-global/safe-apps-sdk` + `@safe-global/safe-apps-provider`** are the
+  widget's _optional_ peers (ranges matching `@wagmi/connectors`'s own) and the website's
+  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's.
 - **Connect UI — `src/components/WalletControl.tsx`** is built directly on wagmi hooks —
   **no ConnectKit or extra wallet UI lib**. Mind the **wagmi v3 deprecations**: use `useConnection`
   (not `useAccount`), and the mutation hooks' `mutate` (not the deprecated `connect`/`disconnect`
