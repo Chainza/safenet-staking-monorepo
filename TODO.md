@@ -2,9 +2,11 @@
 
 ## Planned
 
-- [ ] **Sanctions screening — wallet addresses.** Disable the UI for wallet addresses
+- [x] **Sanctions screening — wallet addresses.** Disable the UI for wallet addresses
       flagged by the Chainalysis on-chain sanctions oracle (`SanctionsList` at
       `0x40C57923924B5c5c5455c48D93317139ADDaC8fb` on mainnet, `isSanctioned(address)`).
+      _Done: core `sanctions.isSanctioned` + widget `useIsSanctioned`; a flagged wallet's
+      action panels are replaced by a blocking `SanctionedNotice`._
 - [ ] **Sanctions screening — countries** _(optional, clarifications needed)._ Disable
       the UI for users in sanctioned countries (likely geo-IP based; needs a decision on
       data source, country list, and where enforcement lives — widget vs. website).

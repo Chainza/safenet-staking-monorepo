@@ -39,8 +39,10 @@ independently publishable artifact; lower layers have no dependency on higher on
     `contracts/src/Staking.sol` via `parseAbi`; `erc20Abi` is viem's built-in re-exported as the
     single source of truth; `erc20PermitAbi` adds the EIP-2612 surface; `merkleDropAbi` covers
     the rewards MerkleDrop contract — docs
-    https://docs.safefoundation.org/, repo https://github.com/safe-research/safenet); standalone
-    per-method functions grouped by contract (`staking.*` / `token.*` / `rewards.*`, covering
+    https://docs.safefoundation.org/, repo https://github.com/safe-research/safenet;
+    `sanctionsListAbi` is the screening read of the Chainalysis sanctions oracle); standalone
+    per-method functions grouped by contract (`staking.*` / `token.*` / `rewards.*` /
+    `sanctions.*`, covering
     every read/write on each contract plus a pure `encode*` calldata builder for Safe/EIP-5792
     batching); and an
     ergonomic `createSafeStakeClient({ publicClient, walletClient?, config? })` factory that binds
@@ -53,10 +55,15 @@ independently publishable artifact; lower layers have no dependency on higher on
     between proof fetch and claim, so consumers must refetch the proof then. `merkleDrop` is
     **required** in `ContractAddresses`, same as `staking`/`token` — `resolveConfig` throws when
     it can't be determined for the chain.
+  - **Sanctions screening is a core read** (`sanctions.ts`): `isSanctioned(client, config,
+account)` queries the Chainalysis on-chain sanctions oracle (`SanctionsList`, mainnet
+    `0x40C57923924B5c5c5455c48D93317139ADDaC8fb`) — a public registry of OFAC-sanctioned
+    addresses. `sanctionsList` is **required** in `ContractAddresses`, same as the other three,
+    even though it isn't a SAFE contract. Enforcement lives in the widget (see below).
   - **Chain id + addresses are dynamic and overridable.** `config` carries only `{ chainId,
-addresses: { staking, token, merkleDrop } }` (no RPC URL/transport). `resolveConfig(input?)`
-    merges built-in `KNOWN_DEPLOYMENTS` (mainnet) with per-address overrides and checksums via
-    `getAddress`; defaults to mainnet.
+addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transport).
+    `resolveConfig(input?)` merges built-in `KNOWN_DEPLOYMENTS` (mainnet) with per-address
+    overrides and checksums via `getAddress`; defaults to mainnet.
 - **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
   on core. The `mode` prop has three values: **`"auto"` (default)** detects a host `WagmiProvider`
   and reuses it, falling back to the widget's own config when none is found; `"standalone"` always
@@ -75,11 +82,13 @@ addresses: { staking, token, merkleDrop } }` (no RPC URL/transport). `resolveCon
   **On-chain data hooks**). See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
-  - **Compliance (to add):** addresses sanctioned by OFAC, as identified through Chainalysis'
-    on-chain oracle, are excluded from receiving rewards. The oracle is the `SanctionsList`
-    contract at `0x40C57923924B5c5c5455c48D93317139ADDaC8fb` on Ethereum mainnet — call its
-    `isSanctioned(address)` view (or `isSanctionedVerbose`) to gate reward eligibility. Not yet
-    implemented — wire this into the website when the rewards flow lands.
+  - **Compliance — wallet sanctions screening is implemented in the widget** (so every consumer
+    gets it, the website included): `useIsSanctioned` reads `client.sanctions.isSanctioned` for
+    the connected account, and `WidgetInner` swaps **all four action panels** for a blocking
+    `SanctionedNotice` when the oracle returns `true` (the Header stays so the account can
+    disconnect). Only a confirmed on-chain `true` blocks — a pending or failed read never locks
+    out an unflagged account. Remaining follow-up (see TODO.md): country-level (geo-IP)
+    screening.
 
 Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
@@ -209,6 +218,12 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
   `error`.
+- **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
+  (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
+  `client.sanctions.isSanctioned` for the connected account. `Widget` gates on
+  `data === true` only: while flagged, `WidgetInner` renders `SanctionedNotice` instead of the
+  tab panels. Never block on a pending/failed read — an RPC hiccup must not lock out an
+  unflagged account.
 - **Rewards are hybrid like validators: an off-chain proof + on-chain counters.**
   `useRewardProof` (`hooks/useRewardProof.ts`) fetches the account's proof JSON from the official
   registry (`safe-fndn/safenet-beta-data` → `assets/rewards/proofs/…`, sharded by the first four
