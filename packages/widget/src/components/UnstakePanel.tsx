@@ -6,10 +6,8 @@ import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
-import { parseAmount } from "../lib/format.js";
+import { dayCount, parseAmount } from "../lib/format.js";
 import type { PanelProps } from "./StakePanel.js";
-
-const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
 /** Unstake flow → `staking.initiateWithdrawal(validator, amount)` via `useUnstake`;
  *  tokens then sit in the withdrawal queue until the unbonding delay clears. */

@@ -26,6 +26,11 @@ export function formatPercent(fraction: number, maxFractionDigits = 1): string {
   });
 }
 
+/** Whole days in a duration of unix seconds (e.g. the withdraw delay). */
+export function dayCount(sec: bigint): number {
+  return Number(sec / 86_400n);
+}
+
 /** Truncate an address to `0x1234…cdef` form. */
 export function truncateAddress(address: Address | string, lead = 6, tail = 4): string {
   if (address.length <= lead + tail) return address;

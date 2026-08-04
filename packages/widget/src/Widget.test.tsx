@@ -90,6 +90,14 @@ describe("Widget", () => {
     expect(screen.getByRole("button", { name: "Claim next" })).toBeDefined();
   });
 
+  it("discloses staking risks behind a collapsible below the panels", async () => {
+    const user = userEvent.setup();
+    render(<Widget />);
+    const trigger = screen.getByRole("button", { name: /staking involves risk/i });
+    await user.click(trigger);
+    expect(screen.getByText("Smart-contract risk")).toBeDefined();
+  });
+
   it("replaces the action panels with a blocking notice for a sanctioned wallet", async () => {
     sanctioned = true;
     render(

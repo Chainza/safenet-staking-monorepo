@@ -6,6 +6,7 @@ import {
   parseAmount,
   truncateAddress,
   formatCountdown,
+  dayCount,
 } from "./format.js";
 
 describe("formatToken", () => {
@@ -51,6 +52,18 @@ describe("parseAmount", () => {
 
   it("returns 0n for malformed input instead of throwing", () => {
     expect(parseAmount("not-a-number", 18)).toBe(0n);
+  });
+});
+
+describe("dayCount", () => {
+  it("converts unix-second durations to whole days", () => {
+    expect(dayCount(172_800n)).toBe(2);
+    expect(dayCount(604_800n)).toBe(7);
+  });
+
+  it("truncates partial days", () => {
+    expect(dayCount(90_000n)).toBe(1); // 25h
+    expect(dayCount(0n)).toBe(0);
   });
 });
 

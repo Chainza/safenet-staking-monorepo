@@ -3,7 +3,7 @@ import type { StakeViewState } from "../hooks/useStakeData.js";
 import { useSafeAllowance } from "../hooks/useSafeAllowance.js";
 import { useStake } from "../hooks/useStake.js";
 import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
-import { parseAmount } from "../lib/format.js";
+import { dayCount, parseAmount } from "../lib/format.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
@@ -14,8 +14,6 @@ export interface PanelProps {
   symbol: string;
   decimals: number;
 }
-
-const dayCount = (sec: bigint) => Number(sec / 86_400n);
 
 /** Stake flow → `token.approve` (only if the allowance is short) then
  *  `staking.stake(validator, amount)`, both via `useStake`. */

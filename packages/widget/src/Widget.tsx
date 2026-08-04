@@ -6,6 +6,7 @@ import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
 import { useIsSanctioned } from "./hooks/useIsSanctioned.js";
 import { SanctionedNotice } from "./components/SanctionedNotice.js";
+import { RisksDisclosure } from "./components/RisksDisclosure.js";
 import { Header } from "./components/Header.js";
 import { Card } from "./components/ui/card.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs.js";
@@ -96,6 +97,8 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
             </TabsContent>
           </Tabs>
         )}
+
+        <RisksDisclosure withdrawDelaySec={data.withdrawDelaySec} />
 
         <div className="ss:flex ss:items-center ss:justify-center ss:gap-2 ss:mt-4 ss:font-mono ss:text-[10px] ss:tracking-wide ss:text-muted-foreground">
           <span>SAFENET</span>
