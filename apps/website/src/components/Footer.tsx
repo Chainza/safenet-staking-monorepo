@@ -4,6 +4,7 @@ const FOOTER_LINKS = [
   { label: "Safenet Explorer", href: "https://explorer.safenet-beta.eth.limo/" },
   { label: "FAQ", href: "https://docs.safefoundation.org/safenet/resources/faq" },
   { label: "Docs", href: "https://docs.safefoundation.org/safenet/overview/introduction" },
+  { label: "Staking Risks", href: "https://docs.safefoundation.org/safenet/staking/risk" },
 ] as const;
 
 /**
