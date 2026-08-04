@@ -17,7 +17,8 @@ describe("PrivacyPage", () => {
     expect(screen.getByText("Safenet indexer")).toBeDefined();
     expect(screen.getByText(/raw.githubusercontent.com/)).toBeDefined();
     expect(screen.getByText("WalletConnect relay")).toBeDefined();
-    expect(screen.getByText(/Vercel/)).toBeDefined();
+    // Hosting is deliberately unnamed: Vercel is staging-only (prod = IPFS+ENS).
+    expect(screen.queryByText(/Vercel/)).toBeNull();
   });
 
   it("declares the indexer as Chainza-operated (first-party), not a third party", () => {

@@ -87,8 +87,9 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
     Ukraine; director Vladyslav Myronenko; site https://chainza.io/; contact email
     connect@chainza.io — the only address to ever use on these pages). Governing law is Ukraine.
     Don't invent registration/VAT numbers; the privacy policy must list exactly the services the
-    browser really talks to (RPC, Safenet indexer, GitHub raw, WalletConnect relay, Vercel
-    hosting — no cookies/analytics), so update it when that set changes. The Safenet indexer is
+    browser really talks to (RPC, Safenet indexer, GitHub raw, WalletConnect relay — no
+    cookies/analytics), so update it when that set changes. **Don't mention Vercel** — it's the
+    staging host only (production is IPFS+ENS), so hosting stays unnamed. The Safenet indexer is
     **Chainza's own API** — first-party, not a third-party service (the legal pages say so);
     name it only as "Safenet indexer" — never its hosting provider (operator's choice).
   - **Compliance — wallet sanctions screening is implemented in the widget** (so every consumer

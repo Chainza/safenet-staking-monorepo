@@ -51,11 +51,6 @@ export function PrivacyPage() {
             if you connect via WalletConnect: the connection metadata required to pair with your
             wallet.
           </li>
-          <li>
-            <span className="font-medium text-[var(--page-fg)]">Hosting (Vercel)</span> — serves
-            the static application files and keeps standard access logs (IP address, user agent).
-            No analytics products are enabled.
-          </li>
         </ul>
         <p>
           Apart from the Chainza-operated indexer, these providers are third parties processing
