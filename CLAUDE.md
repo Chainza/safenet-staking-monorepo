@@ -83,12 +83,14 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
   - **Compliance — wallet sanctions screening is implemented in the widget** (so every consumer
-    gets it, the website included): `useIsSanctioned` reads `client.sanctions.isSanctioned` for
-    the connected account, and `WidgetInner` swaps **all four action panels** for a blocking
-    `SanctionedNotice` when the oracle returns `true` (the Header stays so the account can
-    disconnect). Only a confirmed on-chain `true` blocks — a pending or failed read never locks
-    out an unflagged account. Remaining follow-up (see TODO.md): country-level (geo-IP)
-    screening.
+    gets it, the website included): `useIsSanctioned` reads the oracle for the connected
+    account; when it returns `true`, `WidgetInner` swaps **all four action panels** for a
+    blocking `SanctionedNotice` (the Header stays so the account can disconnect) and
+    `useSafeStakeClient` returns `undefined`, disabling **every RPC/API call** (queries disable,
+    mutations throw, the proof/registry HTTP fetches gate themselves) — the only outbound call
+    left is the oracle screen. The call gate is **fail-closed** (nothing fetches until the
+    screen confirms the wallet clean); only the notice itself waits for a confirmed flag.
+    Remaining follow-up (see TODO.md): country-level (geo-IP) screening.
 
 Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
@@ -183,7 +185,13 @@ widget's own `build:css` _and_ the website resolving it to source.
   core `config` prop**: the deployment is derived from the wallet's chain via
   `KNOWN_DEPLOYMENTS`, so a chain switch rebinds the client (and refetches) instead of showing
   the previous chain's data. On a chain with no known deployment the hook returns `undefined`
-  and every dependent query must disable itself (`enabled`).
+  and every dependent query must disable itself (`enabled`). **The seam is also the sanctions
+  gate — fail-closed**: until `useSanctionsCleared` confirms the connected wallet is *not*
+  flagged by the Chainalysis oracle (pending, failed and flagged screens all block) it returns
+  `undefined` too, so every dependent query disables and every mutation throws — never fetch
+  first and screen later. The raw binding lives in `useSafeStakeClientUnscreened`, which exists
+  **solely** for `useIsSanctioned` (the screen must keep reading the oracle while blocked, or
+  the gate would oscillate); everything else consumes the screened `useSafeStakeClient`.
 - **Query keys come from a builder function — never inline.** Every `useQuery`/`useMutation`
   hook gets a dedicated key constructor **exported from the same file as the hook**, named by
   convention `useSomeData` → `someDataQueryKey` (e.g. `useSafeBalance` →
@@ -220,10 +228,14 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   `error`.
 - **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
   (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
-  `client.sanctions.isSanctioned` for the connected account. `Widget` gates on
-  `data === true` only: while flagged, `WidgetInner` renders `SanctionedNotice` instead of the
-  tab panels. Never block on a pending/failed read — an RPC hiccup must not lock out an
-  unflagged account.
+  `sanctions.isSanctioned` through the **unscreened** client for the connected account. Two
+  consumers with deliberately different thresholds: **the call gate is fail-closed** —
+  `useSanctionsCleared` is `true` only while disconnected (nothing to screen) or after a
+  confirmed not-sanctioned, and `useSafeStakeClient` plus the two HTTP fetches that bypass the
+  seam (`useRewardProof`, `useValidators`' registry query) hold every call until it clears —
+  **the blocking notice is confirmation-only** — `WidgetInner` swaps the tab panels for
+  `SanctionedNotice` on `data === true` alone, so a pending screen shows an empty-but-usable
+  UI rather than accusing an unscreened account.
 - **Rewards are hybrid like validators: an off-chain proof + on-chain counters.**
   `useRewardProof` (`hooks/useRewardProof.ts`) fetches the account's proof JSON from the official
   registry (`safe-fndn/safenet-beta-data` → `assets/rewards/proofs/…`, sharded by the first four
