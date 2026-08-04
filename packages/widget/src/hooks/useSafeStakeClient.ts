@@ -22,7 +22,8 @@ export function useSafeStakeClient(): SafeStakeClient | undefined {
     publicClient === undefined ||
     !deployment?.staking ||
     !deployment.token ||
-    !deployment.merkleDrop
+    !deployment.merkleDrop ||
+    !deployment.sanctionsList
   ) {
     return undefined;
   }

@@ -4,6 +4,8 @@ import { WidgetProviders } from "./providers/WidgetProviders.js";
 import { useWidgetStore, type TabKey, type WidgetMode } from "./store.js";
 import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
+import { useIsSanctioned } from "./hooks/useIsSanctioned.js";
+import { SanctionedNotice } from "./components/SanctionedNotice.js";
 import { Header } from "./components/Header.js";
 import { Card } from "./components/ui/card.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs.js";
@@ -52,6 +54,9 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
   const {
     data: { symbol, decimals },
   } = useSafeTokenMeta();
+  // Compliance gate: only a confirmed on-chain flag blocks — a pending or
+  // failed oracle read never locks out an unflagged account.
+  const sanctioned = useIsSanctioned().data === true;
 
   const state: StakeViewState = { connected: isConnected, account: address ?? null, ...data };
 
@@ -64,26 +69,32 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
       <Card className="ss:rounded-[20px] ss:p-5 ss:animate-rise">
         <Header />
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList>
-            <TabsTrigger value="stake">stake</TabsTrigger>
-            <TabsTrigger value="unstake">unstake</TabsTrigger>
-            <TabsTrigger value="claim">claim</TabsTrigger>
-            <TabsTrigger value="rewards">rewards</TabsTrigger>
-          </TabsList>
-          <TabsContent value="stake">
-            <StakePanel state={state} symbol={symbol} decimals={decimals} />
-          </TabsContent>
-          <TabsContent value="unstake">
-            <UnstakePanel state={state} symbol={symbol} decimals={decimals} />
-          </TabsContent>
-          <TabsContent value="claim">
-            <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
-          </TabsContent>
-          <TabsContent value="rewards">
-            <RewardsPanel state={state} symbol={symbol} decimals={decimals} />
-          </TabsContent>
-        </Tabs>
+        {sanctioned ? (
+          // Sanctioned wallet → no action panels at all; the Header stays so
+          // the account can still be disconnected/switched.
+          <SanctionedNotice />
+        ) : (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+            <TabsList>
+              <TabsTrigger value="stake">stake</TabsTrigger>
+              <TabsTrigger value="unstake">unstake</TabsTrigger>
+              <TabsTrigger value="claim">claim</TabsTrigger>
+              <TabsTrigger value="rewards">rewards</TabsTrigger>
+            </TabsList>
+            <TabsContent value="stake">
+              <StakePanel state={state} symbol={symbol} decimals={decimals} />
+            </TabsContent>
+            <TabsContent value="unstake">
+              <UnstakePanel state={state} symbol={symbol} decimals={decimals} />
+            </TabsContent>
+            <TabsContent value="claim">
+              <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
+            </TabsContent>
+            <TabsContent value="rewards">
+              <RewardsPanel state={state} symbol={symbol} decimals={decimals} />
+            </TabsContent>
+          </Tabs>
+        )}
 
         <div className="ss:flex ss:items-center ss:justify-center ss:gap-2 ss:mt-4 ss:font-mono ss:text-[10px] ss:tracking-wide ss:text-muted-foreground">
           <span>SAFENET</span>

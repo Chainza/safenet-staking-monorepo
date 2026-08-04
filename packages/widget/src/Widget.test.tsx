@@ -10,6 +10,7 @@ import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";
 // deterministically — the mock account's real on-chain queue is empty, and
 // per repo convention specific values are stubbed rather than read from RPC.
 // `claimableAt: 1n` (1970) is well past now → ClaimPanel marks it ready.
+let sanctioned = false;
 vi.mock("./hooks/useSafeStakeClient.js", () => ({
   useSafeStakeClient: () =>
     ({
@@ -25,14 +26,16 @@ vi.mock("./hooks/useSafeStakeClient.js", () => ({
         getTotalValidatorStakes: async () => [],
         getPendingWithdrawals: async () => [{ amount: 750n, claimableAt: 1n }],
       },
+      sanctions: { isSanctioned: async () => sanctioned },
     }) as unknown as SafeStakeClient,
 }));
 
 describe("Widget", () => {
   // The store is module-global; reset shared UI state between cases.
-  beforeEach(() =>
-    useWidgetStore.setState({ resolvedMode: "standalone", tab: "stake", selectedValidator: null }),
-  );
+  beforeEach(() => {
+    sanctioned = false;
+    useWidgetStore.setState({ resolvedMode: "standalone", tab: "stake", selectedValidator: null });
+  });
 
   it("defaults to dark theme, standalone mode and the stake tab", () => {
     const { container } = render(<Widget />);
@@ -83,6 +86,20 @@ describe("Widget", () => {
     await user.click(screen.getByRole("tab", { name: "claim" }));
     await waitFor(() => expect(screen.getAllByText(/Ready to claim/i).length).toBeGreaterThan(0));
     expect(screen.getByRole("button", { name: "Claim next" })).toBeDefined();
+  });
+
+  it("replaces the action panels with a blocking notice for a sanctioned wallet", async () => {
+    sanctioned = true;
+    render(
+      <WagmiHarness config={mainnetConfig(true)}>
+        <Widget mode="inherit" />
+      </WagmiHarness>,
+    );
+    // The oracle read resolves async → the panels give way to the alert.
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Address blocked"));
+    expect(screen.queryByRole("tab", { name: "stake" })).toBeNull();
+    // The Header survives so the account can still disconnect.
+    expect(screen.getByText("SAFE")).toBeDefined();
   });
 
   it('shows guidance when mode="inherit" has no host WagmiProvider', () => {
