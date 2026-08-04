@@ -122,6 +122,20 @@ describe("App", () => {
     expect(document.getElementById("header-menu")).toBeNull();
   });
 
+  it("navigates to the legal pages from the footer, disconnected included", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("link", { name: "Imprint" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Imprint" })).toBeDefined();
+
+    await user.click(screen.getByRole("link", { name: "Terms" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Terms of Service" })).toBeDefined();
+
+    await user.click(screen.getByRole("link", { name: "Privacy" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeDefined();
+  });
+
   it("toggles the theme and threads it to the widget", async () => {
     const user = userEvent.setup();
     renderApp();

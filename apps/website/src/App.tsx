@@ -3,7 +3,10 @@ import { Route, Routes } from "react-router";
 import { Footer } from "./components/Footer.js";
 import { Header } from "./components/Header.js";
 import { ActivityPage } from "./pages/ActivityPage.js";
+import { ImprintPage } from "./pages/ImprintPage.js";
+import { PrivacyPage } from "./pages/PrivacyPage.js";
 import { StakePage } from "./pages/StakePage.js";
+import { TermsPage } from "./pages/TermsPage.js";
 import { applyTheme, getInitialTheme, storeTheme, type Theme } from "./theme.js";
 
 export default function App() {
@@ -29,6 +32,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<StakePage theme={theme} />} />
           <Route path="/activity" element={<ActivityPage />} />
+          <Route path="/imprint" element={<ImprintPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </main>
 
