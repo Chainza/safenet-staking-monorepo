@@ -57,6 +57,15 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Activity" })).toBeDefined();
   });
 
+  it("returns to the Stake page via the header logo", async () => {
+    const user = userEvent.setup();
+    renderApp({ initialPath: "/terms" });
+
+    expect(screen.queryByTestId("widget")).toBeNull();
+    await user.click(screen.getByRole("link", { name: "Home" }));
+    expect(screen.getByTestId("widget")).toBeDefined();
+  });
+
   it("navigates to the Activity page and back", async () => {
     const user = userEvent.setup();
     renderApp({ connected: true });
