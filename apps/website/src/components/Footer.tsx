@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { Link } from "react-router";
+import { NavLink } from "react-router";
 
 const FOOTER_LINKS = [
   { label: "Safenet Explorer", href: "https://explorer.safenet-beta.eth.limo/" },
@@ -15,8 +15,13 @@ const LEGAL_LINKS = [
   { label: "Privacy", to: "/privacy" },
 ] as const;
 
-const linkClass =
-  "flex items-center gap-1 text-sm font-medium text-[var(--page-muted)] transition-colors hover:text-[var(--page-fg)]";
+const linkBase = "flex items-center gap-1 text-sm font-medium transition-colors";
+
+const linkClass = `${linkBase} text-[var(--page-muted)] hover:text-[var(--page-fg)]`;
+
+/** The currently open legal page reads slightly stronger (fg, not muted). */
+const legalLinkClass = ({ isActive }: { isActive: boolean }) =>
+  isActive ? `${linkBase} text-[var(--page-fg)]` : linkClass;
 
 /**
  * Page footer: external Safenet resources (explorer, FAQ, docs) plus the
@@ -33,9 +38,9 @@ export function Footer() {
         </a>
       ))}
       {LEGAL_LINKS.map(({ label, to }) => (
-        <Link key={to} to={to} className={linkClass}>
+        <NavLink key={to} to={to} className={legalLinkClass}>
           {label}
-        </Link>
+        </NavLink>
       ))}
     </footer>
   );

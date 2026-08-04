@@ -47,4 +47,22 @@ describe("Footer", () => {
 
     expect(screen.getAllByRole("link")).toHaveLength(7);
   });
+
+  it("marks only the currently open legal page's link as current", () => {
+    render(
+      <MemoryRouter initialEntries={["/terms"]}>
+        <Footer />
+      </MemoryRouter>,
+    );
+
+    const terms = screen.getByRole("link", { name: /terms/i });
+    expect(terms.getAttribute("aria-current")).toBe("page");
+    // The active link reads stronger than the muted default.
+    expect(terms.className).toContain("text-[var(--page-fg)]");
+    expect(terms.className).not.toContain("text-[var(--page-muted)]");
+
+    const imprint = screen.getByRole("link", { name: /imprint/i });
+    expect(imprint.getAttribute("aria-current")).toBeNull();
+    expect(imprint.className).toContain("text-[var(--page-muted)]");
+  });
 });
