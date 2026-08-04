@@ -357,12 +357,19 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
 ## Widget UI conventions
 
 - **shadcn for UI primitives.** Widget primitives are **vendored shadcn** in
-  `packages/widget/src/components/ui/` (`button`, `tabs`, `input`, `select`, `card`, `badge`),
+  `packages/widget/src/components/ui/` (`button`, `tabs`, `input`, `select`, `card`, `badge`,
+  `collapsible`),
   built on Radix with `class-variance-authority` and a `cn` helper (`lib/utils.ts` =
   `clsx` + `extendTailwindMerge({ prefix: "ss" })` — the prefix matters so merges dedupe `ss:`
   classes). Icons come from `lucide-react`. Prefer composing these over hand-rolling new
   components, and **write minimal custom/boilerplate code**. The domain components
-  (`AmountField`, `ValidatorSelect`, `Summary`, `Header`, panels) are thin compositions over them.
+  (`AmountField`, `ValidatorSelect`, `Summary`, `Header`, `RisksDisclosure`, panels) are thin
+  compositions over them. `RisksDisclosure` (below the tabs, collapsed by default) is the
+  staking-risk disclosure; its items are sourced from the official docs page
+  (https://docs.safefoundation.org/safenet/staking/risk — no slashing in Beta, rewards forfeited
+  below 75% validator participation, smart-contract/beta risk) with the unbonding delay taken
+  live from `withdrawDelaySec`, not hardcoded — keep it in sync with that page, and the website
+  footer's "Staking Risks" link pointing there.
 - **Token bridge:** keep `--safe-*` as the single source of truth and **alias shadcn's semantic
   tokens onto them** in `theme.css` `@theme inline` (`--color-primary: var(--safe-accent)`,
   `--color-background: var(--safe-c1)`, …). Our brand stays `accent`; shadcn's brand role is

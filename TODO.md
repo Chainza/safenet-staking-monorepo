@@ -10,8 +10,11 @@
 - [ ] **Sanctions screening — countries** _(optional, clarifications needed)._ Disable
       the UI for users in sanctioned countries (likely geo-IP based; needs a decision on
       data source, country list, and where enforcement lives — widget vs. website).
-- [ ] **Staking risks disclosure panel.** Surface the risks of staking (slashing,
+- [x] **Staking risks disclosure panel.** Surface the risks of staking (slashing,
       unbonding delay, smart-contract risk) in the widget/website UI.
+      _Done: `RisksDisclosure` collapsible in the widget (four risks sourced from
+      docs.safefoundation.org/safenet/staking/risk, live withdraw delay) + a
+      "Staking Risks" link in the website footer._
 - [ ] **Legal pages.** Operator identity, terms of service, imprint, privacy policy —
       plus links to them in the website `Footer`.
 - [ ] **React Compiler** for both the website and the widget (memoization is currently
