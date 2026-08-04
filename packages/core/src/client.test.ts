@@ -40,6 +40,7 @@ describe("createSafeStakeClient", () => {
         staking: "0x1111111111111111111111111111111111111111",
         token: "0x2222222222222222222222222222222222222222",
         merkleDrop: "0x3333333333333333333333333333333333333333",
+        sanctionsList: "0x4444444444444444444444444444444444444444",
       },
     });
     const sdk = createSafeStakeClient({ publicClient: client, config: resolved });
@@ -87,6 +88,17 @@ describe("createSafeStakeClient", () => {
     expect(readContract.mock.calls[0]![0]).toMatchObject({
       address: sdk.config.addresses.merkleDrop,
       functionName: "cumulativeClaimed",
+      args: [STAKER],
+    });
+  });
+
+  it("exposes the sanctions group bound to the SanctionsList oracle", async () => {
+    const { client, readContract } = makePublicClient(true);
+    const sdk = createSafeStakeClient({ publicClient: client });
+    await expect(sdk.sanctions.isSanctioned(STAKER)).resolves.toBe(true);
+    expect(readContract.mock.calls[0]![0]).toMatchObject({
+      address: sdk.config.addresses.sanctionsList,
+      functionName: "isSanctioned",
       args: [STAKER],
     });
   });

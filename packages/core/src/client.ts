@@ -7,6 +7,7 @@ import {
 } from "./config.js";
 import type { ConnectedWalletClient } from "./types.js";
 import * as rewards from "./rewards.js";
+import * as sanctions from "./sanctions.js";
 import * as staking from "./staking.js";
 import * as token from "./token.js";
 
@@ -30,7 +31,7 @@ export interface CreateSafeStakeClientParams {
  * Bind a public client (and optionally a wallet client) plus a resolved config
  * once, returning grouped, pre-bound contract methods. This is the ergonomic
  * surface for consumers (and the widget); the standalone functions in
- * `staking`/`token`/`rewards` remain available for tree-shaking.
+ * `staking`/`token`/`rewards`/`sanctions` remain available for tree-shaking.
  *
  * The package never creates viem clients — they are always supplied here.
  */
@@ -187,6 +188,11 @@ export function createSafeStakeClient(params: CreateSafeStakeClientParams) {
         ),
       // writes (encode)
       encodeClaim: rewards.encodeClaim,
+    },
+
+    sanctions: {
+      // reads
+      isSanctioned: (account: Address) => sanctions.isSanctioned(publicClient, config, account),
     },
   };
 }
