@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAddress, type Address } from "viem";
+import { useSanctionsCleared } from "./useIsSanctioned.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
 /** A validator the user can stake against: registry metadata plus live
@@ -53,9 +54,15 @@ export const validatorStakesQueryKey = (
  */
 export function useValidators(): Validator[] {
   const client = useSafeStakeClient();
+  // The registry fetch bypasses the (sanctions-screened) client seam, so it
+  // carries its own fail-closed gate: until the screen clears the connected
+  // wallet, the widget makes no outbound calls at all. The stake query below
+  // is covered by the seam — `client` is `undefined` until then.
+  const cleared = useSanctionsCleared();
 
   const { data: registry = [] } = useQuery({
     queryKey: validatorListQueryKey(),
+    enabled: cleared,
     staleTime: 3_600_000,
     queryFn: async (): Promise<Omit<Validator, "totalStaked">[]> => {
       const response = await fetch(VALIDATOR_INFO_URL);

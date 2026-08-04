@@ -10,9 +10,11 @@ import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";
 // deterministically — the mock account's real on-chain queue is empty, and
 // per repo convention specific values are stubbed rather than read from RPC.
 // `claimableAt: 1n` (1970) is well past now → ClaimPanel marks it ready.
+// The stub sits at the *unscreened* level so the real sanctions gate
+// (useIsSanctioned → useSafeStakeClient) runs over it.
 let sanctioned = false;
-vi.mock("./hooks/useSafeStakeClient.js", () => ({
-  useSafeStakeClient: () =>
+vi.mock("./hooks/useSafeStakeClientUnscreened.js", () => ({
+  useSafeStakeClientUnscreened: () =>
     ({
       // No reward proof for the mock account (real 404) → rewards reads stay disabled.
       config: { chainId: 1 },

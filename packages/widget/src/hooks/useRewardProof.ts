@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address, Hex } from "viem";
+import { useSanctionsCleared } from "./useIsSanctioned.js";
 
 /**
  * One account's entry in the published rewards merkle tree
@@ -40,13 +41,18 @@ export const rewardProofQueryKey = (account: Address | undefined) =>
  * The connected account's reward proof from the official registry. `null`
  * (a 404) means the account has never accrued rewards; disabled while
  * disconnected. Roots rotate rarely, hence the five-minute staleTime.
+ *
+ * This fetch bypasses `useSafeStakeClient` (it's HTTP, not on-chain), so it
+ * carries its own fail-closed sanctions gate: no proof is fetched until the
+ * screen clears the connected wallet.
  */
 export function useRewardProof() {
   const { address } = useConnection();
+  const cleared = useSanctionsCleared();
 
   return useQuery({
     queryKey: rewardProofQueryKey(address),
-    enabled: address !== undefined,
+    enabled: address !== undefined && cleared,
     staleTime: 300_000,
     queryFn: async (): Promise<RewardProof | null> => {
       if (address === undefined) {

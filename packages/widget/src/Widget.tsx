@@ -54,8 +54,9 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
   const {
     data: { symbol, decimals },
   } = useSafeTokenMeta();
-  // Compliance gate: only a confirmed on-chain flag blocks — a pending or
-  // failed oracle read never locks out an unflagged account.
+  // The blocking notice needs a *confirmed* flag; the call gate is stricter —
+  // useSafeStakeClient holds every RPC/API call until the screen clears
+  // (fail-closed), so a pending read shows an empty-but-usable UI, not this.
   const sanctioned = useIsSanctioned().data === true;
 
   const state: StakeViewState = { connected: isConnected, account: address ?? null, ...data };

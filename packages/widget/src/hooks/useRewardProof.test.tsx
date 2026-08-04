@@ -10,6 +10,11 @@ const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
 let connectedAddress: Address | undefined = ACCOUNT;
 vi.mock("wagmi", () => ({ useConnection: () => ({ address: connectedAddress }) }));
 
+// Stub the sanctions gate (covered by useIsSanctioned.test.tsx) — under test
+// here is only that the proof fetch waits for the screen to clear.
+let cleared = true;
+vi.mock("./useIsSanctioned.js", () => ({ useSanctionsCleared: () => cleared }));
+
 const fetchMock = vi.fn();
 
 const PROOF = {
@@ -28,6 +33,7 @@ describe("useRewardProof", () => {
     vi.clearAllMocks();
     vi.stubGlobal("fetch", fetchMock);
     connectedAddress = ACCOUNT;
+    cleared = true;
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => PROOF });
   });
@@ -61,6 +67,13 @@ describe("useRewardProof", () => {
 
   it("stays disabled while disconnected", () => {
     connectedAddress = undefined;
+    const { result } = renderHook(() => useRewardProof(), { wrapper });
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("stays disabled until the sanctions screen clears the wallet", () => {
+    cleared = false;
     const { result } = renderHook(() => useRewardProof(), { wrapper });
     expect(result.current.fetchStatus).toBe("idle");
     expect(fetchMock).not.toHaveBeenCalled();

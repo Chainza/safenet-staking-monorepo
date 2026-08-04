@@ -5,11 +5,14 @@ import type { SafeStakeClient } from "safe-stake-core";
 import { useValidators } from "./useValidators.js";
 import { WagmiHarness, mainnetConfig } from "../test/wagmi.js";
 
-// Stub the client seam (covered by useSafeStakeClient.test.tsx) and the
-// registry fetch — what's under test is the mapping/filtering/composition.
+// Stub the client seam (covered by useSafeStakeClient.test.tsx), the
+// sanctions gate (useIsSanctioned.test.tsx) and the registry fetch — what's
+// under test is the mapping/filtering/composition.
 const getTotalValidatorStakes = vi.fn();
 let client: SafeStakeClient | undefined;
 vi.mock("./useSafeStakeClient.js", () => ({ useSafeStakeClient: () => client }));
+let cleared = true;
+vi.mock("./useIsSanctioned.js", () => ({ useSanctionsCleared: () => cleared }));
 
 const GNOSIS = "0x3D58a5475c1336b0A755c3aBd298CeB9b7BB9CDe";
 const GREENFIELD = "0x7B0A8EFA45dE81F11F2846EC28259B62155a2b37";
@@ -37,6 +40,7 @@ describe("useValidators", () => {
       address === GNOSIS ? 100n : 200n,
     );
     client = { config: { chainId: 1 }, staking: { getTotalValidatorStakes } } as never;
+    cleared = true;
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -66,6 +70,17 @@ describe("useValidators", () => {
 
     await waitFor(() => expect(result.current).toHaveLength(2));
     expect(result.current.every((v) => v.totalStaked === 0n)).toBe(true);
+    expect(getTotalValidatorStakes).not.toHaveBeenCalled();
+  });
+
+  it("makes no registry fetch until the sanctions screen clears the wallet", () => {
+    // The stake query is covered too: the screened seam yields no client
+    // until then.
+    cleared = false;
+    client = undefined;
+    const { result } = renderHook(() => useValidators(), { wrapper });
+    expect(result.current).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(getTotalValidatorStakes).not.toHaveBeenCalled();
   });
 
