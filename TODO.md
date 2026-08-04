@@ -15,8 +15,11 @@
       _Done: `RisksDisclosure` collapsible in the widget (four risks sourced from
       docs.safefoundation.org/safenet/staking/risk, live withdraw delay) + a
       "Staking Risks" link in the website footer._
-- [ ] **Legal pages.** Operator identity, terms of service, imprint, privacy policy —
+- [x] **Legal pages.** Operator identity, terms of service, imprint, privacy policy —
       plus links to them in the website `Footer`.
+      _Done: `/imprint` (LLC "CHAINZA" operator identity), `/terms` (Ukrainian governing
+      law), `/privacy` (names every third party the browser talks to) — all linked from
+      the Footer. Contact: connect@chainza.io + chainza.io._
 - [ ] **React Compiler** for both the website and the widget (memoization is currently
       deferred to it by convention — no manual `useMemo`/`useCallback`).
 - [ ] **Publish `core` and `widget` packages** to npm (final package names/scope still

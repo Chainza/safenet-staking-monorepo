@@ -82,6 +82,15 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
   **On-chain data hooks**). See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
+  - **Legal pages** — `/imprint`, `/terms`, `/privacy` (react-router routes on the shared
+    `LegalArticle` shell, linked from the `Footer`). The operator is LLC "CHAINZA" (Uzhhorod,
+    Ukraine; director Vladyslav Myronenko; site https://chainza.io/; contact email
+    connect@chainza.io — the only address to ever use on these pages). Governing law is Ukraine.
+    Don't invent registration/VAT numbers; the privacy policy must list exactly the services the
+    browser really talks to (RPC, Safenet indexer, GitHub raw, WalletConnect relay, Vercel
+    hosting — no cookies/analytics), so update it when that set changes. The Safenet indexer is
+    **Chainza's own API** — first-party, not a third-party service (the legal pages say so);
+    name it only as "Safenet indexer" — never its hosting provider (operator's choice).
   - **Compliance — wallet sanctions screening is implemented in the widget** (so every consumer
     gets it, the website included): `useIsSanctioned` reads the oracle for the connected
     account; when it returns `true`, `WidgetInner` swaps **all four action panels** for a
