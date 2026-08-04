@@ -7,7 +7,9 @@ describe("PrivacyPage", () => {
     render(<PrivacyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeDefined();
-    expect(screen.getByText(/LIMITED LIABILITY COMPANY “CHAINZA”, 21 Shvabska Street/)).toBeDefined();
+    expect(
+      screen.getByText(/LIMITED LIABILITY COMPANY “CHAINZA”, 21 Shvabska Street/),
+    ).toBeDefined();
   });
 
   it("names every service the browser talks to", () => {

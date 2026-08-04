@@ -3,7 +3,7 @@ packages:
   - "packages/*"
 
 allowBuilds:
-  '@reown/appkit': false
+  "@reown/appkit": false
   esbuild: true
 
 onlyBuiltDependencies:

@@ -79,9 +79,7 @@ describe("App", () => {
     renderApp({ initialPath: "/activity" });
 
     expect(await screen.findByTestId("widget")).toBeDefined();
-    await waitFor(() =>
-      expect(screen.queryByText("SAFENET · ACTIVITY")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText("SAFENET · ACTIVITY")).toBeNull());
   });
 
   it("marks only the current route's nav link active", async () => {

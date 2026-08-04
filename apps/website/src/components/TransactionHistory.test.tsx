@@ -3,10 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { TransactionHistory } from "./TransactionHistory.js";
-import type {
-  StakeIncreasedEvent,
-  StakerTransactions,
-} from "../hooks/useStakerTransactions.js";
+import type { StakeIncreasedEvent, StakerTransactions } from "../hooks/useStakerTransactions.js";
 import { WagmiHarness, mainnetConfig, TEST_ADDRESS } from "../test/wagmi.js";
 
 // Stub the data hook: the query itself is covered by

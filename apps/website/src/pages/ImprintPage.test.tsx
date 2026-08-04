@@ -16,9 +16,9 @@ describe("ImprintPage", () => {
   it("links to the operator's website and the open-source repository", () => {
     render(<ImprintPage />);
 
-    expect(
-      screen.getByRole("link", { name: "https://chainza.io/" }).getAttribute("href"),
-    ).toBe("https://chainza.io/");
+    expect(screen.getByRole("link", { name: "https://chainza.io/" }).getAttribute("href")).toBe(
+      "https://chainza.io/",
+    );
     expect(
       screen
         .getByRole("link", { name: /github.com\/Chainza\/safenet-staking-monorepo/ })

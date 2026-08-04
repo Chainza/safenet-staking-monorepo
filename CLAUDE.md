@@ -196,7 +196,7 @@ widget's own `build:css` _and_ the website resolving it to source.
   `KNOWN_DEPLOYMENTS`, so a chain switch rebinds the client (and refetches) instead of showing
   the previous chain's data. On a chain with no known deployment the hook returns `undefined`
   and every dependent query must disable itself (`enabled`). **The seam is also the sanctions
-  gate — fail-closed**: until `useSanctionsCleared` confirms the connected wallet is *not*
+  gate — fail-closed**: until `useSanctionsCleared` confirms the connected wallet is _not_
   flagged by the Chainalysis oracle (pending, failed and flagged screens all block) it returns
   `undefined` too, so every dependent query disables and every mutation throws — never fetch
   first and screen later. The raw binding lives in `useSafeStakeClientUnscreened`, which exists

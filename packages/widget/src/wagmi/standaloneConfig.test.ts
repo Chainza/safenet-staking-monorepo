@@ -23,10 +23,7 @@ describe("getStandaloneConfig", () => {
   });
 
   it("adds WalletConnect when a projectId is supplied", () => {
-    expect(connectorIds(getStandaloneConfig("wc-project"))).toEqual([
-      "injected",
-      "walletConnect",
-    ]);
+    expect(connectorIds(getStandaloneConfig("wc-project"))).toEqual(["injected", "walletConnect"]);
   });
 
   it("adds the Safe connector when embedded in an iframe", () => {

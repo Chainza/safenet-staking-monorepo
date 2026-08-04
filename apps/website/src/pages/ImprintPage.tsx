@@ -26,11 +26,11 @@ export function ImprintPage() {
 
       <LegalSection title="Role of the operator">
         <p>
-          Chainza operates this non-custodial interface to the Safenet Beta staking smart
-          contracts on Ethereum mainnet. The Safenet protocol, the staking contracts and the SAFE
-          token are developed and published by the Safe Ecosystem Foundation and its contributors
-          — not by Chainza. Chainza does not custody assets, does not operate validators and is
-          not a counterparty to any staking transaction.
+          Chainza operates this non-custodial interface to the Safenet Beta staking smart contracts
+          on Ethereum mainnet. The Safenet protocol, the staking contracts and the SAFE token are
+          developed and published by the Safe Ecosystem Foundation and its contributors — not by
+          Chainza. Chainza does not custody assets, does not operate validators and is not a
+          counterparty to any staking transaction.
         </p>
         <p>
           The interface is open source under the MIT license:{" "}
