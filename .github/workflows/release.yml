@@ -18,6 +18,14 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Secrets are hoisted to job env because the `secrets` context is not
+    # available in step-level `if:` expressions (GitHub rejects the whole
+    # workflow file) — the pin steps gate on `env.*` instead.
+    env:
+      FILEBASE_ACCESS_KEY: ${{ secrets.FILEBASE_ACCESS_KEY }}
+      FILEBASE_SECRET_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
+      FILEBASE_BUCKET: ${{ secrets.FILEBASE_BUCKET }}
+      PINATA_JWT: ${{ secrets.PINATA_JWT }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,16 +70,15 @@ jobs:
       # asynchronously on their side.
 
       - name: Pin to Filebase
-        if: ${{ secrets.FILEBASE_ACCESS_KEY != '' && secrets.FILEBASE_SECRET_KEY != '' && secrets.FILEBASE_BUCKET != '' }}
+        if: ${{ env.FILEBASE_ACCESS_KEY != '' && env.FILEBASE_SECRET_KEY != '' && env.FILEBASE_BUCKET != '' }}
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.FILEBASE_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.FILEBASE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.FILEBASE_SECRET_KEY }}
           AWS_DEFAULT_REGION: us-east-1
           # aws-cli v2.23+ adds default integrity checksums that S3-compatible
           # endpoints reject; scope them back to when the request requires them.
           AWS_REQUEST_CHECKSUM_CALCULATION: when_required
           AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
-          FILEBASE_BUCKET: ${{ secrets.FILEBASE_BUCKET }}
           CAR_FILE: ${{ steps.car.outputs.car_file }}
           CID: ${{ steps.car.outputs.cid }}
         run: |
@@ -92,9 +99,8 @@ jobs:
           [ "$PINNED_CID" = "$CID" ] || { echo "CID mismatch!"; exit 1; }
 
       - name: Pin to Pinata
-        if: ${{ secrets.PINATA_JWT != '' }}
+        if: ${{ env.PINATA_JWT != '' }}
         env:
-          PINATA_JWT: ${{ secrets.PINATA_JWT }}
           CID: ${{ steps.car.outputs.cid }}
         run: |
           curl -sSf -X POST https://api.pinata.cloud/pinning/pinByHash \
