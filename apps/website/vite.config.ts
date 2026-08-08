@@ -9,6 +9,9 @@ export default defineConfig(({ command }) => ({
   // throws during init and the connection silently fails. Any host app using
   // the widget's standalone mode + WalletConnect needs the same shim.
   plugins: [react(), tailwindcss(), nodePolyfills()],
+  // Relative asset URLs so the bundle works from any IPFS mount point: path
+  // gateways serve it under /ipfs/<CID>/, where absolute /assets/… paths 404.
+  base: "./",
   // Honor a PORT env override (Vite ignores it natively) so multiple dev
   // servers can run against this repo without fighting over 5173. Reads it off
   // `globalThis` structurally to keep `@types/node` out (same reason as `URL` below).
