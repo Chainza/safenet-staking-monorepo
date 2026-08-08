@@ -109,11 +109,17 @@ jobs:
         if: ${{ env.PINATA_JWT != '' }}
         env:
           CID: ${{ steps.car.outputs.cid }}
+        # v3 Files API — the legacy /pinning/pinByHash returns 403 for keys
+        # created on current accounts. Body is printed so failures self-explain.
         run: |
-          curl -sSf -X POST https://api.pinata.cloud/pinning/pinByHash \
+          RESPONSE=$(curl -sS -X POST https://api.pinata.cloud/v3/files/public/pin_by_cid \
             -H "Authorization: Bearer $PINATA_JWT" \
             -H "Content-Type: application/json" \
-            -d "{\"hashToPin\":\"$CID\",\"pinataMetadata\":{\"name\":\"safe-stake-website-${GITHUB_REF_NAME}\"}}"
+            -d "{\"cid\":\"$CID\",\"name\":\"safe-stake-website-${GITHUB_REF_NAME}\"}" \
+            -w '\n%{http_code}')
+          CODE=$(echo "$RESPONSE" | tail -n 1)
+          echo "$RESPONSE"
+          case "$CODE" in 2*) ;; *) exit 1 ;; esac
 
       - name: Create GitHub Release
         env:
