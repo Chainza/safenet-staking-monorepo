@@ -24,7 +24,11 @@
       deferred to it by convention — no manual `useMemo`/`useCallback`).
 - [ ] **Publish `core` and `widget` packages** to npm (final package names/scope still
       TBD — current names are placeholders).
-- [ ] **Prod deployment: IPFS + ENS.**
+- [ ] **Prod deployment: IPFS + ENS.** _In progress: the bundle is gateway-proof (relative
+      base + hash routing), the tag-triggered release workflow (CAR + CID + pinning +
+      verifiable GitHub Releases) is in place, and the process is documented in
+      `HOSTING.md`. Remaining: pinning-service secrets (Storacha/Filebase/Pinata), ENS
+      name registration + per-release contenthash updates, WalletConnect allowed origins._
 
 ## Nice to have
 

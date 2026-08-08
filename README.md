@@ -45,6 +45,11 @@ All run from the repo root and fan out across workspaces via Turborepo:
 | `pnpm lint`      | ESLint across workspaces                     |
 | `pnpm format`    | Prettier write (`format:check` to verify)    |
 
+## Hosting & releases
+
+The reference UI deploys to **IPFS + ENS** with five independent access paths; releases are
+reproducible and verifiable by CID. See [`HOSTING.md`](HOSTING.md).
+
 ## Contributing
 
 See [`CLAUDE.md`](CLAUDE.md) for repo conventions (version pinning, Tailwind v4 setup,
