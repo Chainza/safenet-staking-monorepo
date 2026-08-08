@@ -88,13 +88,21 @@ jobs:
             --key "$CAR_FILE" \
             --body "$CAR_FILE" \
             --metadata import=car
-          # Filebase unpacks the CAR and reports the root CID it pinned —
-          # assert it matches the CID we computed locally.
-          PINNED_CID=$(aws s3api head-object \
-            --endpoint-url https://s3.filebase.com \
-            --bucket "$FILEBASE_BUCKET" \
-            --key "$CAR_FILE" \
-            --query 'Metadata.cid' --output text)
+          # Filebase unpacks the CAR asynchronously and then reports the root
+          # CID it pinned in the object metadata — poll for it, then assert it
+          # matches the CID we computed locally. (If this times out, check the
+          # bucket is on the IPFS network — only those unpack CAR imports.)
+          PINNED_CID=None
+          for i in $(seq 1 30); do
+            PINNED_CID=$(aws s3api head-object \
+              --endpoint-url https://s3.filebase.com \
+              --bucket "$FILEBASE_BUCKET" \
+              --key "$CAR_FILE" \
+              --query 'Metadata.cid' --output text)
+            [ "$PINNED_CID" != "None" ] && [ -n "$PINNED_CID" ] && break
+            echo "waiting for Filebase to unpack the CAR ($i/30)..."
+            sleep 10
+          done
           echo "Filebase pinned: $PINNED_CID"
           [ "$PINNED_CID" = "$CID" ] || { echo "CID mismatch!"; exit 1; }
 
