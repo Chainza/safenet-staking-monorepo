@@ -56,20 +56,10 @@ jobs:
           echo "contenthash: $CONTENTHASH"
 
       # ---- Pinning (each step activates once its secrets exist) ----
-      # Storacha and Filebase both receive the CAR itself, so each is an
-      # independent full copy of the content. Pinata pins by CID, fetching
-      # the blocks from the network (i.e. from the other two) — its pin
-      # request is queued here and completes asynchronously on their side.
-
-      - name: Pin to Storacha
-        if: ${{ secrets.STORACHA_KEY != '' && secrets.STORACHA_PROOF != '' }}
-        env:
-          STORACHA_PRINCIPAL: ${{ secrets.STORACHA_KEY }}
-          STORACHA_PROOF: ${{ secrets.STORACHA_PROOF }}
-          CAR_FILE: ${{ steps.car.outputs.car_file }}
-        run: |
-          npx --yes @storacha/cli@3.0.1 space add "$STORACHA_PROOF"
-          npx --yes @storacha/cli@3.0.1 up --car "$CAR_FILE"
+      # Filebase receives the CAR itself and seeds the content on the IPFS
+      # network. Pinata pins by CID, fetching the blocks from the network
+      # (i.e. from Filebase) — its pin request is queued here and completes
+      # asynchronously on their side.
 
       - name: Pin to Filebase
         if: ${{ secrets.FILEBASE_ACCESS_KEY != '' && secrets.FILEBASE_SECRET_KEY != '' && secrets.FILEBASE_BUCKET != '' }}

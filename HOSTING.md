@@ -35,10 +35,11 @@ Pushing a `v*` tag runs [release.yml](.github/workflows/release.yml):
    design — it ships in the bundle — and verifiers need it to reproduce the exact bytes).
 2. **Pack** — `ipfs-car` packs `apps/website/dist` into a CAR file and computes the root
    **CID** locally. Packing is deterministic: the same `dist/` always yields the same CID.
-3. **Pin** — the CAR is uploaded to **Storacha** and **Filebase** (two independent full
-   copies; the Filebase step re-reads the CID Filebase computed and fails on mismatch), and
+3. **Pin** — the CAR is uploaded to **Filebase**, which unpacks it and seeds the content on
+   the IPFS network (the step re-reads the CID Filebase computed and fails on mismatch), and
    **Pinata** is asked to pin the CID from the network (completes asynchronously on their
-   side). Each pin step activates only when its secrets are configured.
+   side), giving a second independent copy. Each pin step activates only when its secrets
+   are configured.
 4. **Publish** — a GitHub Release is created with the CAR file attached and notes carrying
    the CID, the ENS contenthash value, gateway links, self-pinning instructions and the
    verification recipe.
@@ -101,15 +102,18 @@ independent deployment of the app — it's fully static and talks only to public
 Configuration the pipeline expects (all under the repo's **Settings → Secrets and
 variables → Actions**):
 
-| Kind     | Name                                                            | Source                                                                            |
-| -------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Variable | `VITE_WALLETCONNECT_PROJECT_ID`                                 | WalletConnect Cloud project (public id)                                           |
-| Secret   | `STORACHA_KEY`, `STORACHA_PROOF`                                | `storacha key create` (key) + `storacha delegation create <did> --base64` (proof) |
-| Secret   | `FILEBASE_ACCESS_KEY`, `FILEBASE_SECRET_KEY`, `FILEBASE_BUCKET` | Filebase account → Access Keys + an IPFS bucket                                   |
-| Secret   | `PINATA_JWT`                                                    | Pinata account → API Keys (JWT with `pinByHash` permission)                       |
+| Kind     | Name                                                            | Source                                                      |
+| -------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
+| Variable | `VITE_WALLETCONNECT_PROJECT_ID`                                 | WalletConnect Cloud project (public id)                     |
+| Secret   | `FILEBASE_ACCESS_KEY`, `FILEBASE_SECRET_KEY`, `FILEBASE_BUCKET` | Filebase account → Access Keys + an IPFS bucket             |
+| Secret   | `PINATA_JWT`                                                    | Pinata account → API Keys (JWT with `pinByHash` permission) |
 
 Missing pinning secrets don't break a release — the corresponding pin step is skipped — but
-production releases should have all three services active.
+production releases should have both services active. Filebase is the seed (it's the one
+that receives the actual bytes), so it's the one a release can't do without; adding a
+third pinning service later is a single secret-gated step in the workflow, following the
+Pinata pin-by-CID pattern (e.g. 4EVERLAND, which speaks the standard IPFS Pinning Service
+API).
 
 Outside the repo:
 
