@@ -1,0 +1,159 @@
+name: Release
+
+# Every version tag produces a verifiable IPFS release: the website is built,
+# packed into a CAR file (whose root CID is computed locally — ipfs-car is
+# deterministic, so anyone re-building the tag gets the same CID), pinned to
+# each configured pinning service, and published as a GitHub Release carrying
+# the CAR, the CID, the ENS contenthash value and reproduction instructions.
+# Tag only commits that are green on CI — this workflow builds but doesn't
+# re-run the test suite.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        # The WalletConnect project id is public by design (it ships in the
+        # bundle) and lives in a repo *variable*, not a secret, so verifiers
+        # can reproduce the exact bytes. Without it the build still works,
+        # injected-wallets-only.
+        env:
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
+        run: pnpm turbo run build --filter=website...
+
+      - name: Pack CAR and compute CID
+        id: car
+        run: |
+          CAR_FILE="safe-stake-website-${GITHUB_REF_NAME}.car"
+          CID=$(npx --yes ipfs-car@3.1.0 pack apps/website/dist --output "$CAR_FILE")
+          CONTENTHASH=$(node scripts/ens-contenthash.mjs "$CID")
+          echo "cid=$CID" >> "$GITHUB_OUTPUT"
+          echo "car_file=$CAR_FILE" >> "$GITHUB_OUTPUT"
+          echo "contenthash=$CONTENTHASH" >> "$GITHUB_OUTPUT"
+          echo "CID: $CID"
+          echo "contenthash: $CONTENTHASH"
+
+      # ---- Pinning (each step activates once its secrets exist) ----
+      # Storacha and Filebase both receive the CAR itself, so each is an
+      # independent full copy of the content. Pinata pins by CID, fetching
+      # the blocks from the network (i.e. from the other two) — its pin
+      # request is queued here and completes asynchronously on their side.
+
+      - name: Pin to Storacha
+        if: ${{ secrets.STORACHA_KEY != '' && secrets.STORACHA_PROOF != '' }}
+        env:
+          STORACHA_PRINCIPAL: ${{ secrets.STORACHA_KEY }}
+          STORACHA_PROOF: ${{ secrets.STORACHA_PROOF }}
+          CAR_FILE: ${{ steps.car.outputs.car_file }}
+        run: |
+          npx --yes @storacha/cli@3.0.1 space add "$STORACHA_PROOF"
+          npx --yes @storacha/cli@3.0.1 up --car "$CAR_FILE"
+
+      - name: Pin to Filebase
+        if: ${{ secrets.FILEBASE_ACCESS_KEY != '' && secrets.FILEBASE_SECRET_KEY != '' && secrets.FILEBASE_BUCKET != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.FILEBASE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          # aws-cli v2.23+ adds default integrity checksums that S3-compatible
+          # endpoints reject; scope them back to when the request requires them.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          FILEBASE_BUCKET: ${{ secrets.FILEBASE_BUCKET }}
+          CAR_FILE: ${{ steps.car.outputs.car_file }}
+          CID: ${{ steps.car.outputs.cid }}
+        run: |
+          aws s3api put-object \
+            --endpoint-url https://s3.filebase.com \
+            --bucket "$FILEBASE_BUCKET" \
+            --key "$CAR_FILE" \
+            --body "$CAR_FILE" \
+            --metadata import=car
+          # Filebase unpacks the CAR and reports the root CID it pinned —
+          # assert it matches the CID we computed locally.
+          PINNED_CID=$(aws s3api head-object \
+            --endpoint-url https://s3.filebase.com \
+            --bucket "$FILEBASE_BUCKET" \
+            --key "$CAR_FILE" \
+            --query 'Metadata.cid' --output text)
+          echo "Filebase pinned: $PINNED_CID"
+          [ "$PINNED_CID" = "$CID" ] || { echo "CID mismatch!"; exit 1; }
+
+      - name: Pin to Pinata
+        if: ${{ secrets.PINATA_JWT != '' }}
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+          CID: ${{ steps.car.outputs.cid }}
+        run: |
+          curl -sSf -X POST https://api.pinata.cloud/pinning/pinByHash \
+            -H "Authorization: Bearer $PINATA_JWT" \
+            -H "Content-Type: application/json" \
+            -d "{\"hashToPin\":\"$CID\",\"pinataMetadata\":{\"name\":\"safe-stake-website-${GITHUB_REF_NAME}\"}}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CID: ${{ steps.car.outputs.cid }}
+          CONTENTHASH: ${{ steps.car.outputs.contenthash }}
+          CAR_FILE: ${{ steps.car.outputs.car_file }}
+          WC_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
+        run: |
+          cat > release-notes.md << EOF
+          ## IPFS release
+
+          | | |
+          |---|---|
+          | **CID** | \`$CID\` |
+          | **ENS contenthash** | \`$CONTENTHASH\` |
+
+          ### Access
+
+          - Gateway (subdomain): https://$CID.ipfs.dweb.link/
+          - Gateway (path): https://ipfs.io/ipfs/$CID/
+          - Any other IPFS gateway, or a local node: \`ipfs://$CID\`
+          - Via ENS (after the contenthash record is updated to the value above): the site's .eth name in an ENS-aware browser, or through eth.limo / eth.link / eth.sucks
+
+          ### Pin it yourself
+
+          Anyone can keep this release available — fetch and pin the CID with a local node (\`ipfs pin add $CID\`), any pinning service, or import the attached CAR file directly (\`ipfs dag import $CAR_FILE\`).
+
+          ### Verify this build
+
+          The CID is reproducible from the tagged source:
+
+          \`\`\`sh
+          git checkout ${GITHUB_REF_NAME}
+          pnpm install --frozen-lockfile
+          VITE_WALLETCONNECT_PROJECT_ID=$WC_PROJECT_ID pnpm turbo run build --filter=website...
+          npx ipfs-car@3.1.0 pack apps/website/dist
+          # the printed CID must equal the one above
+          node scripts/ens-contenthash.mjs $CID
+          # must print the contenthash above
+          \`\`\`
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            "$CAR_FILE"
