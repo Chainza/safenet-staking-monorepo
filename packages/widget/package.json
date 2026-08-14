@@ -1,8 +1,32 @@
 {
   "name": "@chainza/safenet-staking-widget",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Drop-in React widget for SAFE staking, built on @chainza/safenet-staking-core.",
   "license": "MIT",
+  "keywords": [
+    "safe",
+    "safenet",
+    "staking",
+    "ethereum",
+    "react",
+    "wagmi",
+    "viem",
+    "widget",
+    "web3"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chainza/safenet-staking-monorepo.git",
+    "directory": "packages/widget"
+  },
+  "homepage": "https://github.com/Chainza/safenet-staking-monorepo/tree/main/packages/widget#readme",
+  "bugs": "https://github.com/Chainza/safenet-staking-monorepo/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "./dist/styles.css"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

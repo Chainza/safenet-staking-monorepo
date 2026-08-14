@@ -1,8 +1,27 @@
 {
   "name": "@chainza/safenet-staking-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Headless TypeScript library for SAFE staking contract interaction (viem only).",
   "license": "MIT",
+  "keywords": [
+    "safe",
+    "safenet",
+    "staking",
+    "ethereum",
+    "viem",
+    "web3"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chainza/safenet-staking-monorepo.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/Chainza/safenet-staking-monorepo/tree/main/packages/core#readme",
+  "bugs": "https://github.com/Chainza/safenet-staking-monorepo/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

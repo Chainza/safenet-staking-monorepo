@@ -1,5 +1,5 @@
-/** Package version. */
-export const VERSION = "0.0.0";
+/** Package version. Keep in sync with package.json. */
+export const VERSION = "0.1.0";
 
 // Config — dynamic chain id + overridable contract addresses.
 export {
