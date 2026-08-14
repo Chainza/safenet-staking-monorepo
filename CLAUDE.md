@@ -111,7 +111,10 @@ widget must be built before the app resolves it — `turbo build` handles orderi
 the widget's **TS source** (`packages/widget/src/index.ts`) when `command === "serve"`, so
 widget edits hot-reload via React Fast Refresh with no rebuild. Production `vite build` (and
 `turbo build`) drop the alias and consume the published `dist/`, keeping the real artifact
-boundary intact. Two requirements make this work: (1) `resolve.dedupe` lists the shared peers
+boundary intact. **Only the widget is aliased** — `safe-stake-core` still resolves to its
+`dist/`, so a _new_ core export needs `pnpm --filter safe-stake-core build` before the dev
+server can see it (until then HMR fails with `does not provide an export named …`). Two
+requirements make this work: (1) `resolve.dedupe` lists the shared peers
 (`react`/`react-dom`/`wagmi`/`viem`/`@tanstack/react-query`) — without it the widget source
 could load a second wagmi instance and miss the host's `WagmiContext`, breaking inherit-mode
 detection; (2) the widget's `src/styles.css` declares `@source "./**/*.{ts,tsx}"` (relative
@@ -378,6 +381,18 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
   `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
   from there because pnpm and turbo walk up to the workspace root.
+- **Invariants: `assert`, not `if (…) throw new Error(…)`.** Every workspace uses
+  `import { assert } from "ts-essentials"` — `assert(condition, message)` is typed
+  `asserts condition`, so a guard is one call and the checked values stay narrowed for the rest of
+  the scope (it throws `Error("Assertion Error: " + message)`). Don't hand-roll a local copy, and
+  don't re-export it from core — each package depends on `ts-essentials` directly. Node scripts use
+  `node:assert/strict` instead (`scripts/ens-contenthash.mjs` promises builtins only). It's for
+  programmer errors only — a query function that ran while its own `enabled` gate said no, a write
+  without a connected wallet, an unresolvable config — never for states the UI is meant to render.
+  Deliberately thrown errors in **tests** (`throw new Error("rpc down")` to simulate a failing read)
+  stay plain throws. Note `ts-essentials` is CJS-only with no `exports` map; core's ESM and CJS
+  builds both resolve the named import fine under Node (verified), so it stays a plain
+  `dependency` — core's first runtime one, since `viem` is a peer.
 - **HTTP: axios, never `fetch`.** In the widget every off-chain read goes through the shared
   instance in `lib/http.ts` (`http.get(…)`) — a dedicated `axios.create()` (10s timeout) so a host
   app's global axios defaults/interceptors can neither leak in nor be mutated by us; apps (the

@@ -42,4 +42,7 @@
 - [x] Replace `fetch` with `axios` in the widget. _Done: both off-chain reads
       (`useValidators`' registry JSON, `useRewardProof`) go through the shared
       `lib/http.ts` axios instance._
-- [ ] Replace `throw new Error(...)` with `assert` everywhere across the repo.
+- [x] Replace `throw new Error(...)` with `assert` everywhere across the repo.
+      _Done: `assert` from `ts-essentials` in all three workspaces, `node:assert/strict` in
+      `scripts/`. All 24 invariant throws converted; only the deliberate `throw`s inside test
+      mocks remain._
