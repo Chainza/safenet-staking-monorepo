@@ -29,13 +29,14 @@
       (`ZERO`) — another silent bailout. 75 components/hooks compile, zero bailouts._
 - [ ] **Publish `core` and `widget` packages** to npm (final package names/scope still
       TBD — current names are placeholders).
-- [ ] **Prod deployment: IPFS + ENS.** _In progress: the bundle is gateway-proof (relative
-      base + hash routing), the tag-triggered release workflow (CAR + CID + pinning +
-      verifiable GitHub Releases) is in place, and the process is documented in
-      `HOSTING.md`, and the pipeline is proven end-to-end (test release `v0.0.1`:
-      Filebase + 4EVERLAND pinned, CID publicly resolvable, reproducible across machines).
-      Remaining: ENS name registration + per-release contenthash updates, WalletConnect
-      allowed origins._
+- [x] **Prod deployment: IPFS + ENS.**
+      _Done: gateway-proof bundle (relative base + hash routing); tag-triggered release
+      workflow (deterministic CAR/CID, Filebase + 4EVERLAND pinning, verifiable GitHub
+      Releases); `safenetstake.eth` registered with its contenthash pointing at the release
+      CID; WalletConnect origins allowlisted. All five access paths verified live on
+      `v0.0.1` (ENS-aware browsers, safenetstake.eth.limo/.link/.sucks, public gateways,
+      `ipfs://`, self-pin from the release CAR). Process documented in `HOSTING.md` —
+      per-release: push tag + sign the contenthash update._
 
 ## Nice to have
 

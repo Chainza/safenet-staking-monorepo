@@ -142,7 +142,7 @@ jobs:
           - Gateway (subdomain): https://$CID.ipfs.dweb.link/
           - Gateway (path): https://ipfs.io/ipfs/$CID/
           - Any other IPFS gateway, or a local node: \`ipfs://$CID\`
-          - Via ENS (after the contenthash record is updated to the value above): the site's .eth name in an ENS-aware browser, or through eth.limo / eth.link / eth.sucks
+          - Via ENS, once safenetstake.eth's contenthash record is updated to the value above: https://safenetstake.eth.limo / [.eth.link](https://safenetstake.eth.link) / [.eth.sucks](https://safenetstake.eth.sucks), or safenetstake.eth directly in an ENS-aware browser
 
           ### Pin it yourself
 

@@ -47,8 +47,9 @@ All run from the repo root and fan out across workspaces via Turborepo:
 
 ## Hosting & releases
 
-The reference UI deploys to **IPFS + ENS** with five independent access paths; releases are
-reproducible and verifiable by CID. See [`HOSTING.md`](HOSTING.md).
+The reference UI is live at [safenetstake.eth.limo](https://safenetstake.eth.limo)
+(`safenetstake.eth`), deployed to **IPFS + ENS** with five independent access paths;
+releases are reproducible and verifiable by CID. See [`HOSTING.md`](HOSTING.md).
 
 ## Contributing
 

@@ -1,22 +1,22 @@
 # Hosting & Releases
 
-The reference UI is a fully static bundle deployed to **IPFS** and named via **ENS**. There is
-no production server: resilience comes from redundancy at every layer — multiple independent
-pinning services hold the content, the name resolves on-chain, and anyone can re-host a release
-from its published CID.
+The reference UI is a fully static bundle deployed to **IPFS** and named via **ENS**
+(**`safenetstake.eth`**). There is no production server: resilience comes from redundancy at
+every layer — multiple independent pinning services hold the content, the name resolves
+on-chain, and anyone can re-host a release from its published CID.
 
 ## The five access paths
 
 Every production release is reachable through five independent paths. No single provider,
 gateway, or DNS operator can take all of them down.
 
-| #   | Path                   | How                                                                                            | Depends on                     |
-| --- | ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1   | Native ENS resolution  | Open the `.eth` name directly in an ENS-aware browser (Brave, Opera, Status, MetaMask Mobile)  | ENS + any IPFS retrieval       |
-| 2   | ENS→IPFS gateways      | `https://<name>.eth.limo`, `.eth.link`, `.eth.sucks`                                           | ENS + the gateway operator     |
-| 3   | Direct CID via gateway | `https://<CID>.ipfs.dweb.link/`, `https://ipfs.io/ipfs/<CID>/`, or any other public gateway    | The CID being pinned somewhere |
-| 4   | Local IPFS node        | `ipfs://<CID>` in an IPFS-enabled browser, or `ipfs pin add <CID>` + a local gateway           | Nothing but the IPFS network   |
-| 5   | Self-hosting           | Anyone pins the CID (or imports the release's CAR file) and serves it from their own node/host | Only the person doing it       |
+| #   | Path                   | How                                                                                                                                              | Depends on                     |
+| --- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| 1   | Native ENS resolution  | Open `safenetstake.eth` directly in an ENS-aware browser (Brave, Opera, Status, MetaMask Mobile)                                                 | ENS + any IPFS retrieval       |
+| 2   | ENS→IPFS gateways      | [safenetstake.eth.limo](https://safenetstake.eth.limo), [.eth.link](https://safenetstake.eth.link), [.eth.sucks](https://safenetstake.eth.sucks) | ENS + the gateway operator     |
+| 3   | Direct CID via gateway | `https://<CID>.ipfs.dweb.link/`, `https://ipfs.io/ipfs/<CID>/`, or any other public gateway                                                      | The CID being pinned somewhere |
+| 4   | Local IPFS node        | `ipfs://<CID>` in an IPFS-enabled browser, or `ipfs pin add <CID>` + a local gateway                                                             | Nothing but the IPFS network   |
+| 5   | Self-hosting           | Anyone pins the CID (or imports the release's CAR file) and serves it from their own node/host                                                   | Only the person doing it       |
 
 Each release's CID is published in its GitHub Release notes, so paths 3–5 work even for old
 versions and even if the ENS record moves on.
@@ -60,10 +60,10 @@ Then:
    lag the workflow by a few minutes).
 3. Smoke-test path 3: open `https://<CID>.ipfs.dweb.link/` from the release notes.
 4. **Update the ENS contenthash** — copy the `0xe301…` value from the release notes and set
-   it as the ENS name's `contenthash` record (e.g. via [app.ens.domains](https://app.ens.domains)
+   it as `safenetstake.eth`'s `contenthash` record (e.g. via [app.ens.domains](https://app.ens.domains)
    → the name → Records → Edit → Content Hash). This is a signed on-chain transaction from the
    wallet that owns the name; CI deliberately never holds that key.
-5. Smoke-test paths 1–2: open `https://<name>.eth.limo` (gateways pick the new record up
+5. Smoke-test paths 1–2: open https://safenetstake.eth.limo (gateways pick the new record up
    within minutes).
 
 ## Verifying a release
@@ -117,11 +117,12 @@ works; note Pinata's pin-by-CID requires a paid plan).
 
 Outside the repo:
 
-- **ENS name** — registered and held by an operator wallet; its `contenthash` is updated on
-  each release (see the checklist above).
-- **WalletConnect Cloud** — the ENS gateway origins (`<name>.eth.limo` etc.) must be on the
-  project's allowed-domains list, or WalletConnect connections from those origins may be
-  rejected. Injected-wallet connections are unaffected.
+- **ENS name** — `safenetstake.eth`, registered and held by an operator wallet; its
+  `contenthash` is updated on each release (see the checklist above). Mind the expiry date —
+  renew well before it (after expiry there's only a 90-day grace period).
+- **WalletConnect Cloud** — the ENS gateway origins (`safenetstake.eth.limo`, `.eth.link`,
+  `.eth.sucks`) must be on the project's allowed-domains list, or WalletConnect connections
+  from those origins may be rejected. Injected-wallet connections are unaffected.
 
 ## Staging
 
