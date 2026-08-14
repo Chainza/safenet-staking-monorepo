@@ -344,6 +344,25 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   line-weight, not a size, and are fine).
 - **Libraries build with tsup** (dual ESM/CJS + `.d.ts`); the app builds with Vite. The widget
   externalizes `react`, `react-dom`, `wagmi`, `viem`.
+- **React Compiler runs in both React workspaces** (`babel-plugin-react-compiler`), which is what
+  makes the no-manual-memoization rule work. Two integrations, because the two build tools differ:
+  the **website** uses `@vitejs/plugin-react`'s `reactCompilerPreset()` through
+  `@rolldown/plugin-babel` in `vite.config.ts` (covering the widget's TS source too in `serve`,
+  where it's aliased); the **widget** runs Babel itself from a small esbuild `onLoad` plugin in
+  `tsup.config.ts` (tsup has no Babel step) — Babel only inserts the memoization and leaves the
+  TS/JSX for esbuild. Compiled output imports `react/compiler-runtime`, hence its tsup `external`
+  entry. Three gotchas:
+  1. **`@babel/core` is pinned to 7.x on purpose** (the lone exception to "prefer the latest
+     major"). Under `@babel/core` 8 the compiler bails out of every function with a destructuring
+     default (`BuildHIR::lowerAssignment … got: AssignmentPattern`) — silently, so the only symptom
+     is lost memoization.
+  2. **Never write a bigint literal inside a component or hook.** The compiler can't lower
+     `BigIntLiteral` and bails out of the whole function; import `ZERO` from `lib/bigint.ts`
+     (or hoist the literal to module scope). Plain non-React functions are unaffected.
+  3. **Bailouts are silent.** After touching this setup, check coverage by running Babel with the
+     compiler's `logger` over `src` and asserting no `CompileError` events (75 functions compile
+     across the two workspaces today). Vitest configs deliberately skip the compiler — tests
+     exercise the un-compiled semantics the compiler must preserve.
 - **esbuild build script** must be approved to install cleanly — `onlyBuiltDependencies: [esbuild]`
   in `pnpm-workspace.yaml`. Package manager is pnpm, pinned via the `packageManager` field
   only. **Do not re-add `devEngines.packageManager`**: with `onFail: "download"` pnpm tracks its
@@ -390,8 +409,8 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   `data-theme` live → the floating content renders unthemed (e.g. transparent background).
   Render such content inline (the Select here drops `SelectPrimitive.Portal`).
 - **No manual memoization.** Do not use `useMemo` / `useCallback` / `React.memo` — write plain
-  computed consts and plain functions. **The React Compiler will be added later** and will handle
-  memoization automatically. Where a hook must re-run every render rather than be memoized (e.g.
+  computed consts and plain functions. **React Compiler is enabled** (see the build note below) and
+  handles memoization automatically. Where a hook must re-run every render rather than be memoized (e.g.
   reading the clock), use the **`"use no memo"`** directive — see `hooks/useDateNow.ts`
   (`{ "use no memo"; return Date.now(); }`); the directive also satisfies the `react-hooks/purity`
   lint rule that otherwise rejects `Date.now()` during render. If you genuinely need stable

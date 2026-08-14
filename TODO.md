@@ -20,8 +20,13 @@
       _Done: `/imprint` (LLC "CHAINZA" operator identity), `/terms` (Ukrainian governing
       law), `/privacy` (names every third party the browser talks to) — all linked from
       the Footer. Contact: connect@chainza.io + chainza.io._
-- [ ] **React Compiler** for both the website and the widget (memoization is currently
+- [x] **React Compiler** for both the website and the widget (memoization is
       deferred to it by convention — no manual `useMemo`/`useCallback`).
+      _Done: the website via `@vitejs/plugin-react`'s `reactCompilerPreset()` +
+      `@rolldown/plugin-babel`, the widget via a Babel `onLoad` esbuild plugin in
+      `tsup.config.ts`. `@babel/core` is pinned to 7.x (8 makes the compiler bail on
+      destructuring defaults) and inline bigint literals were moved to `lib/bigint.ts`
+      (`ZERO`) — another silent bailout. 75 components/hooks compile, zero bailouts._
 - [ ] **Publish `core` and `widget` packages** to npm (final package names/scope still
       TBD — current names are placeholders).
 - [ ] **Prod deployment: IPFS + ENS.** _In progress: the bundle is gateway-proof (relative
