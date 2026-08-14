@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
@@ -8,7 +9,13 @@ export default defineConfig(({ command }) => ({
   // Buffer) that the browser doesn't provide — without these the connector
   // throws during init and the connection silently fails. Any host app using
   // the widget's standalone mode + WalletConnect needs the same shim.
-  plugins: [react(), tailwindcss(), nodePolyfills()],
+  //
+  // React Compiler (`babel({ presets: [reactCompilerPreset()] })`) auto-memoizes
+  // components/hooks, which is why this codebase never hand-writes `useMemo` /
+  // `useCallback` / `React.memo`. In `serve` it also compiles the widget's TS
+  // source (aliased below); production consumes the widget's own compiled
+  // `dist/`, which tsup compiles with the same plugin.
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), nodePolyfills()],
   // Relative asset URLs so the bundle works from any IPFS mount point: path
   // gateways serve it under /ipfs/<CID>/, where absolute /assets/… paths 404.
   base: "./",

@@ -60,12 +60,15 @@
     "zustand": "5.0.14"
   },
   "devDependencies": {
+    "@babel/core": "7.29.7",
     "@tailwindcss/postcss": "4.3.0",
     "@tanstack/react-query": "5.100.14",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
+    "@types/babel__core": "7.20.5",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
+    "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "29.1.1",
     "postcss": "8.5.15",
     "postcss-cli": "11.0.1",
