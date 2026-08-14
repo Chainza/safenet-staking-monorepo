@@ -27,8 +27,11 @@
       `tsup.config.ts`. `@babel/core` is pinned to 7.x (8 makes the compiler bail on
       destructuring defaults) and inline bigint literals were moved to `lib/bigint.ts`
       (`ZERO`) — another silent bailout. 75 components/hooks compile, zero bailouts._
-- [ ] **Publish `core` and `widget` packages** to npm (final package names/scope still
-      TBD — current names are placeholders).
+- [x] **Publish `core` and `widget` packages** to npm.
+      _Done: published as `@chainza/safenet-staking-core` and
+      `@chainza/safenet-staking-widget` v0.1.0 (public, MIT), with per-package READMEs and
+      publish metadata. Names are final; runtime identifiers keep the brand-neutral
+      `safe-stake` naming (see CLAUDE.md)._
 - [x] **Prod deployment: IPFS + ENS.**
       _Done: gateway-proof bundle (relative base + hash routing); tag-triggered release
       workflow (deterministic CAR/CID, Filebase + 4EVERLAND pinning, verifiable GitHub
