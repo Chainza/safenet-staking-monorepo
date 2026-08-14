@@ -6,6 +6,7 @@ import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
+import { ZERO } from "../lib/bigint.js";
 import { dayCount, parseAmount } from "../lib/format.js";
 import type { PanelProps } from "./StakePanel.js";
 
@@ -26,7 +27,7 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
   const { mutate: unstake, isPending, error } = useUnstake();
 
   const amountWei = parseAmount(amount, decimals);
-  const hasAmount = amountWei > 0n;
+  const hasAmount = amountWei > ZERO;
   const insufficient = amountWei > stakedBalance;
   const pretty = hasAmount ? Number(amount).toLocaleString("en-US") : "0.00";
 

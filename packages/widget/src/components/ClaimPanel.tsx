@@ -1,4 +1,5 @@
 import { CircleCheck, Clock, Inbox } from "lucide-react";
+import { ZERO } from "../lib/bigint.js";
 import { formatCountdown, formatToken } from "../lib/format.js";
 import { useDateNow } from "../hooks/useDateNow.js";
 import { useClaim } from "../hooks/useClaim.js";
@@ -40,8 +41,8 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
 
   const claimable = withdrawals
     .filter((w) => formatCountdown(w.claimableAt, nowMs) === null)
-    .reduce((sum, w) => sum + w.amount, 0n);
-  const hasClaimable = claimable > 0n;
+    .reduce((sum, w) => sum + w.amount, ZERO);
+  const hasClaimable = claimable > ZERO;
 
   // `claimWithdrawal()` always settles the queue head, so a single button drives
   // the whole panel: blocked while a claim is in flight or nothing has matured.

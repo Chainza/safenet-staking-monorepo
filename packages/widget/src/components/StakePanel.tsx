@@ -3,6 +3,7 @@ import type { StakeViewState } from "../hooks/useStakeData.js";
 import { useSafeAllowance } from "../hooks/useSafeAllowance.js";
 import { useStake } from "../hooks/useStake.js";
 import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
+import { ZERO } from "../lib/bigint.js";
 import { dayCount, parseAmount } from "../lib/format.js";
 import { AmountField } from "./AmountField.js";
 import { ValidatorSelect } from "./ValidatorSelect.js";
@@ -34,7 +35,7 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
   const wrongNetwork = useWrongNetwork();
 
   const amountWei = parseAmount(amount, decimals);
-  const hasAmount = amountWei > 0n;
+  const hasAmount = amountWei > ZERO;
   const insufficient = amountWei > walletBalance;
   const needsApproval = allowance !== undefined && allowance < amountWei;
   const pretty = hasAmount ? Number(amount).toLocaleString("en-US") : "0.00";

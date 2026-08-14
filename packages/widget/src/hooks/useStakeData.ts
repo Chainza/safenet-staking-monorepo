@@ -1,5 +1,6 @@
 import { type Address } from "viem";
 import type { PendingWithdrawal } from "safe-stake-core";
+import { ZERO } from "../lib/bigint.js";
 import { useWidgetStore } from "../store.js";
 import { useSafeBalance } from "./useSafeBalance.js";
 import { useStakedBalance } from "./useStakedBalance.js";
@@ -45,14 +46,14 @@ export function useStakeData(): StakeData {
   const selected = useWidgetStore((s) => s.selectedValidator);
   const selectValidator = useWidgetStore((s) => s.selectValidator);
   const validators = useValidators();
-  const { data: walletBalance = 0n } = useSafeBalance();
+  const { data: walletBalance = ZERO } = useSafeBalance();
   const { data: withdrawals = [] } = useWithdrawals();
-  const { data: withdrawDelaySec = 0n } = useWithdrawDelay();
+  const { data: withdrawDelaySec = ZERO } = useWithdrawDelay();
 
   // `null` selection falls back to the first validator (the default display);
   // `undefined` only while the registry hasn't loaded.
   const selectedValidator = validators.find((v) => v.address === selected) ?? validators[0];
-  const { data: stakedBalance = 0n } = useStakedBalance(selectedValidator?.address);
+  const { data: stakedBalance = ZERO } = useStakedBalance(selectedValidator?.address);
 
   return {
     walletBalance,

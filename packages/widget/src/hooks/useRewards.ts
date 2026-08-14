@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
+import { ZERO } from "../lib/bigint.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useRewardProof } from "./useRewardProof.js";
 
@@ -64,17 +65,17 @@ export function useRewards(): RewardsData {
   });
 
   if (proof === undefined || proof === null || claimed === undefined) {
-    return { claimable: 0n, totalClaimed: claimed ?? 0n, rootStale: false, canClaim: false };
+    return { claimable: ZERO, totalClaimed: claimed ?? ZERO, rootStale: false, canClaim: false };
   }
 
   const cumulative = BigInt(proof.cumulativeAmount);
-  const claimable = cumulative > claimed ? cumulative - claimed : 0n;
+  const claimable = cumulative > claimed ? cumulative - claimed : ZERO;
   const rootStale = onChainRoot !== undefined && onChainRoot !== proof.merkleRoot;
 
   return {
     claimable,
     totalClaimed: claimed,
     rootStale,
-    canClaim: claimable > 0n && !rootStale && proof.proof !== null,
+    canClaim: claimable > ZERO && !rootStale && proof.proof !== null,
   };
 }

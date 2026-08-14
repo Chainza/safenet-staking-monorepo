@@ -1,4 +1,5 @@
 import { Gift, Sparkles } from "lucide-react";
+import { ZERO } from "../lib/bigint.js";
 import { formatToken } from "../lib/format.js";
 import { useRewardProof } from "../hooks/useRewardProof.js";
 import { useRewards } from "../hooks/useRewards.js";
@@ -42,7 +43,7 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
 
   // Rewards withheld until the account clears the foundation's KYC checks.
   const kycPending =
-    proof.kycAmount !== undefined && BigInt(proof.kycAmount) > 0n && proof.kyc !== true;
+    proof.kycAmount !== undefined && BigInt(proof.kycAmount) > ZERO && proof.kyc !== true;
 
   // Same cascade shape as the other panels: every branch before the last is a
   // blocked state; only the final one submits.

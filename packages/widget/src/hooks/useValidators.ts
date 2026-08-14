@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAddress, type Address } from "viem";
+import { ZERO } from "../lib/bigint.js";
 import { useSanctionsCleared } from "./useIsSanctioned.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
@@ -96,5 +97,5 @@ export function useValidators(): Validator[] {
     },
   });
 
-  return registry.map((validator, i) => ({ ...validator, totalStaked: stakes?.[i] ?? 0n }));
+  return registry.map((validator, i) => ({ ...validator, totalStaked: stakes?.[i] ?? ZERO }));
 }
