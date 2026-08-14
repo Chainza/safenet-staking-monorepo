@@ -39,5 +39,7 @@
 
 ## Nice to have
 
-- [ ] Replace `fetch` with `axios` in the widget.
+- [x] Replace `fetch` with `axios` in the widget. _Done: both off-chain reads
+      (`useValidators`' registry JSON, `useRewardProof`) go through the shared
+      `lib/http.ts` axios instance._
 - [ ] Replace `throw new Error(...)` with `assert` everywhere across the repo.

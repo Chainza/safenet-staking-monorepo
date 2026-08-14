@@ -171,6 +171,9 @@ importers:
       '@walletconnect/ethereum-provider':
         specifier: ^2.21.1
         version: 2.23.9(@types/react@19.2.15)(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(zod@4.4.3)
+      axios:
+        specifier: 1.18.1
+        version: 1.18.1
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1

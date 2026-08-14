@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { Address } from "viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http } from "../lib/http.js";
 import { useRewardProof, rewardProofQueryKey } from "./useRewardProof.js";
 
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
@@ -15,7 +16,10 @@ vi.mock("wagmi", () => ({ useConnection: () => ({ address: connectedAddress }) }
 let cleared = true;
 vi.mock("./useIsSanctioned.js", () => ({ useSanctionsCleared: () => cleared }));
 
-const fetchMock = vi.fn();
+// The widget's axios instance is the single HTTP seam (lib/http.test.ts covers
+// the instance itself), so stub it rather than the network.
+vi.mock("../lib/http.js", () => ({ http: { get: vi.fn() } }));
+const getMock = vi.mocked(http.get);
 
 const PROOF = {
   cumulativeAmount: "1000",
@@ -31,14 +35,11 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 describe("useRewardProof", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("fetch", fetchMock);
     connectedAddress = ACCOUNT;
     cleared = true;
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => PROOF });
+    getMock.mockResolvedValue({ status: 200, data: PROOF });
   });
-
-  afterEach(() => vi.unstubAllGlobals());
 
   it("fetches the proof from the sharded registry path (lowercased address)", async () => {
     const { result } = renderHook(() => useRewardProof(), { wrapper });
@@ -46,37 +47,49 @@ describe("useRewardProof", () => {
 
     expect(result.current.data).toEqual(PROOF);
     // First four address bytes shard the path: 0x70997970… → 70/99/79/70.
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(getMock).toHaveBeenCalledWith(
       "https://raw.githubusercontent.com/safe-fndn/safenet-beta-data/main/assets/rewards/proofs/70/99/79/70/0x70997970c51812dc3a010c7d01b50e0d17dc79c8.json",
+      { validateStatus: expect.any(Function) },
     );
   });
 
   it("resolves null on a 404 (account has never accrued rewards)", async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+    getMock.mockResolvedValue({ status: 404, data: "" });
     const { result } = renderHook(() => useRewardProof(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeNull();
   });
 
+  it("treats 404 (but no other failure) as a success status for axios", async () => {
+    renderHook(() => useRewardProof(), { wrapper });
+    await waitFor(() => expect(getMock).toHaveBeenCalled());
+
+    const { validateStatus } = getMock.mock.calls[0]![1]!;
+    expect(validateStatus!(404)).toBe(true);
+    expect(validateStatus!(200)).toBe(true);
+    expect(validateStatus!(500)).toBe(false);
+    expect(validateStatus!(403)).toBe(false);
+  });
+
   it("errors on any other HTTP failure", async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    getMock.mockRejectedValue(new Error("Request failed with status code 500"));
     const { result } = renderHook(() => useRewardProof(), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toMatch(/HTTP 500/);
+    expect(result.current.error?.message).toMatch(/500/);
   });
 
   it("stays disabled while disconnected", () => {
     connectedAddress = undefined;
     const { result } = renderHook(() => useRewardProof(), { wrapper });
     expect(result.current.fetchStatus).toBe("idle");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getMock).not.toHaveBeenCalled();
   });
 
   it("stays disabled until the sanctions screen clears the wallet", () => {
     cleared = false;
     const { result } = renderHook(() => useRewardProof(), { wrapper });
     expect(result.current.fetchStatus).toBe("idle");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getMock).not.toHaveBeenCalled();
   });
 
   it("exposes an account-scoped query key", () => {

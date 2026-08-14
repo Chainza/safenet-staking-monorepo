@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAddress, type Address } from "viem";
 import { ZERO } from "../lib/bigint.js";
+import { http } from "../lib/http.js";
 import { useSanctionsCleared } from "./useIsSanctioned.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
@@ -66,11 +67,9 @@ export function useValidators(): Validator[] {
     enabled: cleared,
     staleTime: 3_600_000,
     queryFn: async (): Promise<Omit<Validator, "totalStaked">[]> => {
-      const response = await fetch(VALIDATOR_INFO_URL);
-      if (!response.ok) {
-        throw new Error(`validator registry fetch failed: HTTP ${response.status}`);
-      }
-      const infos: ValidatorInfo[] = await response.json();
+      // axios throws on non-2xx, so a failed registry read surfaces as a query
+      // error (→ empty set) without an explicit status check.
+      const { data: infos } = await http.get<ValidatorInfo[]>(VALIDATOR_INFO_URL);
       return infos
         .filter((info) => info.is_active)
         .map((info) => ({

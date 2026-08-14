@@ -249,8 +249,9 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
 - **Rewards are hybrid like validators: an off-chain proof + on-chain counters.**
   `useRewardProof` (`hooks/useRewardProof.ts`) fetches the account's proof JSON from the official
   registry (`safe-fndn/safenet-beta-data` → `assets/rewards/proofs/…`, sharded by the first four
-  address bytes, filename lowercased); a 404 resolves to `null` (never accrued rewards) and the
-  query key is account-scoped, chain-independent. `useRewards` (`hooks/useRewards.ts`) combines
+  address bytes, filename lowercased); a 404 resolves to `null` (never accrued rewards) — widened
+  into axios' success range via `validateStatus`, since every other non-2xx must still throw — and
+  the query key is account-scoped, chain-independent. `useRewards` (`hooks/useRewards.ts`) combines
   it with two on-chain reads (`cumulativeClaimed(account)` + `merkleRoot()`, keys
   `cumulativeClaimedQueryKey`/`merkleRootQueryKey`) into `{ claimable, totalClaimed, rootStale,
 canClaim }` — `claimable` = proof's cumulative amount − claimed counter; `rootStale` (on-chain
@@ -377,6 +378,13 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
   `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
   from there because pnpm and turbo walk up to the workspace root.
+- **HTTP: axios, never `fetch`.** In the widget every off-chain read goes through the shared
+  instance in `lib/http.ts` (`http.get(…)`) — a dedicated `axios.create()` (10s timeout) so a host
+  app's global axios defaults/interceptors can neither leak in nor be mutated by us; apps (the
+  website's `useStakerTransactions`) use `axios` directly. axios throws on non-2xx, so drop
+  `response.ok`/status checks and let the query surface the error; widen a status that is an
+  expected _answer_ (the reward proof's 404) with `validateStatus`. Tests stub the seam
+  (`vi.mock("../lib/http.js", …)`), never `globalThis.fetch`.
 - **Logging:** use `lib/logger.ts` (`logger.log`/`info`/`warn`/`error`) instead of `console.*` in
   the widget — it prefixes every line with `[safe-stake-widget]`, so callers never repeat it.
 - **Package names are not final.** `safe-stake-core` / `safe-stake-widget` (and the eventual

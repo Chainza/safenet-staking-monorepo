@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { SafeStakeClient } from "safe-stake-core";
+import { http } from "../lib/http.js";
 import { useValidators } from "./useValidators.js";
 import { WagmiHarness, mainnetConfig } from "../test/wagmi.js";
 
@@ -25,7 +26,10 @@ const REGISTRY_JSON = [
   { address: GREENFIELD.toLowerCase(), label: "Greenfield", is_active: true },
 ].map((entry) => ({ ...entry, commission: 0.05, participation_rate_14d: 0.99 }));
 
-const fetchMock = vi.fn();
+// The widget's axios instance is the single HTTP seam (lib/http.test.ts covers
+// the instance itself), so stub it rather than the network.
+vi.mock("../lib/http.js", () => ({ http: { get: vi.fn() } }));
+const getMock = vi.mocked(http.get);
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <WagmiHarness config={mainnetConfig()}>{children}</WagmiHarness>
@@ -34,16 +38,13 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 describe("useValidators", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockResolvedValue({ ok: true, json: async () => REGISTRY_JSON });
+    getMock.mockResolvedValue({ data: REGISTRY_JSON });
     getTotalValidatorStakes.mockImplementation(async (address: string) =>
       address === GNOSIS ? 100n : 200n,
     );
     client = { config: { chainId: 1 }, staking: { getTotalValidatorStakes } } as never;
     cleared = true;
   });
-
-  afterEach(() => vi.unstubAllGlobals());
 
   it("serves active registry validators, checksummed, with live stake totals", async () => {
     const { result } = renderHook(() => useValidators(), { wrapper });
@@ -80,15 +81,16 @@ describe("useValidators", () => {
     client = undefined;
     const { result } = renderHook(() => useValidators(), { wrapper });
     expect(result.current).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getMock).not.toHaveBeenCalled();
     expect(getTotalValidatorStakes).not.toHaveBeenCalled();
   });
 
   it("returns an empty set while the registry fetch fails", async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+    // axios rejects on non-2xx; the query error leaves the set empty.
+    getMock.mockRejectedValue(new Error("Request failed with status code 503"));
     const { result } = renderHook(() => useValidators(), { wrapper });
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await waitFor(() => expect(getMock).toHaveBeenCalled());
     expect(result.current).toEqual([]);
     expect(getTotalValidatorStakes).not.toHaveBeenCalled();
   });
