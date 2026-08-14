@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { Footer } from "./Footer.js";
 
 const externalLinks = [
+  { name: /safenetstake\.eth/i, href: "https://safenetstake.eth.limo/" },
   { name: /safenet explorer/i, href: "https://explorer.safenet-beta.eth.limo/" },
   { name: /faq/i, href: "https://docs.safefoundation.org/safenet/resources/faq" },
   { name: /^docs$/i, href: "https://docs.safefoundation.org/safenet/overview/introduction" },
@@ -42,10 +43,10 @@ describe("Footer", () => {
     expect(link.getAttribute("target")).toBeNull();
   });
 
-  it("renders exactly the seven links", () => {
+  it("renders exactly the eight links", () => {
     renderFooter();
 
-    expect(screen.getAllByRole("link")).toHaveLength(7);
+    expect(screen.getAllByRole("link")).toHaveLength(8);
   });
 
   it("marks only the currently open legal page's link as current", () => {

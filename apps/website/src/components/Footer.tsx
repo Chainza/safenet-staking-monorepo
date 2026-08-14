@@ -2,6 +2,9 @@ import { ArrowUpRight } from "lucide-react";
 import { NavLink } from "react-router";
 
 const FOOTER_LINKS = [
+  // The canonical production deployment (IPFS + ENS) — kept visible from every
+  // environment (staging included) so users can always reach the real thing.
+  { label: "safenetstake.eth", href: "https://safenetstake.eth.limo/" },
   { label: "Safenet Explorer", href: "https://explorer.safenet-beta.eth.limo/" },
   { label: "FAQ", href: "https://docs.safefoundation.org/safenet/resources/faq" },
   { label: "Docs", href: "https://docs.safefoundation.org/safenet/overview/introduction" },
