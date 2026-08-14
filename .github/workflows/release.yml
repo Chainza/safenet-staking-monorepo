@@ -25,7 +25,7 @@ jobs:
       FILEBASE_ACCESS_KEY: ${{ secrets.FILEBASE_ACCESS_KEY }}
       FILEBASE_SECRET_KEY: ${{ secrets.FILEBASE_SECRET_KEY }}
       FILEBASE_BUCKET: ${{ secrets.FILEBASE_BUCKET }}
-      PINATA_JWT: ${{ secrets.PINATA_JWT }}
+      FOREVERLAND_TOKEN: ${{ secrets.FOREVERLAND_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
 
       # ---- Pinning (each step activates once its secrets exist) ----
       # Filebase receives the CAR itself and seeds the content on the IPFS
-      # network. Pinata pins by CID, fetching the blocks from the network
+      # network. 4EVERLAND pins by CID, fetching the blocks from the network
       # (i.e. from Filebase) — its pin request is queued here and completes
       # asynchronously on their side.
 
@@ -105,15 +105,15 @@ jobs:
           echo "CID never resolved — Filebase likely didn't import the CAR."
           exit 1
 
-      - name: Pin to Pinata
-        if: ${{ env.PINATA_JWT != '' }}
+      - name: Pin to 4EVERLAND
+        if: ${{ env.FOREVERLAND_TOKEN != '' }}
         env:
           CID: ${{ steps.car.outputs.cid }}
-        # v3 Files API — the legacy /pinning/pinByHash returns 403 for keys
-        # created on current accounts. Body is printed so failures self-explain.
+        # Standard IPFS Pinning Service API (pin by CID). Body is printed so
+        # failures self-explain.
         run: |
-          RESPONSE=$(curl -sS -X POST https://api.pinata.cloud/v3/files/public/pin_by_cid \
-            -H "Authorization: Bearer $PINATA_JWT" \
+          RESPONSE=$(curl -sS -X POST https://api.4everland.dev/pins \
+            -H "Authorization: Bearer $FOREVERLAND_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"cid\":\"$CID\",\"name\":\"safe-stake-website-${GITHUB_REF_NAME}\"}" \
             -w '\n%{http_code}')

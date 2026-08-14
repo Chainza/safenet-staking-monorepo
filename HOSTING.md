@@ -36,10 +36,10 @@ Pushing a `v*` tag runs [release.yml](.github/workflows/release.yml):
 2. **Pack** — `ipfs-car` packs `apps/website/dist` into a CAR file and computes the root
    **CID** locally. Packing is deterministic: the same `dist/` always yields the same CID.
 3. **Pin** — the CAR is uploaded to **Filebase**, which unpacks it and seeds the content on
-   the IPFS network (the step re-reads the CID Filebase computed and fails on mismatch), and
-   **Pinata** is asked to pin the CID from the network (completes asynchronously on their
-   side), giving a second independent copy. Each pin step activates only when its secrets
-   are configured.
+   the IPFS network (the step then polls until the locally computed CID actually resolves
+   via a public gateway), and **4EVERLAND** is asked to pin the CID from the network
+   (completes asynchronously on their side), giving a second independent copy. Each pin
+   step activates only when its secrets are configured.
 4. **Publish** — a GitHub Release is created with the CAR file attached and notes carrying
    the CID, the ENS contenthash value, gateway links, self-pinning instructions and the
    verification recipe.
@@ -56,8 +56,8 @@ git push origin v0.1.0
 Then:
 
 1. Wait for the **Release** workflow to finish and open the created GitHub Release.
-2. Check the pin steps in the workflow log (Pinata's pin lands asynchronously — it can lag
-   the workflow by a few minutes).
+2. Check the pin steps in the workflow log (4EVERLAND's pin lands asynchronously — it can
+   lag the workflow by a few minutes).
 3. Smoke-test path 3: open `https://<CID>.ipfs.dweb.link/` from the release notes.
 4. **Update the ENS contenthash** — copy the `0xe301…` value from the release notes and set
    it as the ENS name's `contenthash` record (e.g. via [app.ens.domains](https://app.ens.domains)
@@ -102,18 +102,18 @@ independent deployment of the app — it's fully static and talks only to public
 Configuration the pipeline expects (all under the repo's **Settings → Secrets and
 variables → Actions**):
 
-| Kind     | Name                                                            | Source                                                      |
-| -------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Variable | `VITE_WALLETCONNECT_PROJECT_ID`                                 | WalletConnect Cloud project (public id)                     |
-| Secret   | `FILEBASE_ACCESS_KEY`, `FILEBASE_SECRET_KEY`, `FILEBASE_BUCKET` | Filebase account → Access Keys + an IPFS bucket             |
-| Secret   | `PINATA_JWT`                                                    | Pinata account → API Keys (JWT with `pinByHash` permission) |
+| Kind     | Name                                                            | Source                                                           |
+| -------- | --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Variable | `VITE_WALLETCONNECT_PROJECT_ID`                                 | WalletConnect Cloud project (public id)                          |
+| Secret   | `FILEBASE_ACCESS_KEY`, `FILEBASE_SECRET_KEY`, `FILEBASE_BUCKET` | Filebase account → Access Keys (S3 API) + an IPFS bucket         |
+| Secret   | `FOREVERLAND_TOKEN`                                             | 4EVERLAND account → 4EVER Pin page (auto-generated Bearer token) |
 
 Missing pinning secrets don't break a release — the corresponding pin step is skipped — but
 production releases should have both services active. Filebase is the seed (it's the one
 that receives the actual bytes), so it's the one a release can't do without; adding a
 third pinning service later is a single secret-gated step in the workflow, following the
-Pinata pin-by-CID pattern (e.g. 4EVERLAND, which speaks the standard IPFS Pinning Service
-API).
+4EVERLAND pin-by-CID pattern (any service speaking the standard IPFS Pinning Service API
+works; note Pinata's pin-by-CID requires a paid plan).
 
 Outside the repo:
 
