@@ -27,8 +27,10 @@
 - [ ] **Prod deployment: IPFS + ENS.** _In progress: the bundle is gateway-proof (relative
       base + hash routing), the tag-triggered release workflow (CAR + CID + pinning +
       verifiable GitHub Releases) is in place, and the process is documented in
-      `HOSTING.md`. Remaining: pinning-service secrets (Filebase/4EVERLAND), ENS
-      name registration + per-release contenthash updates, WalletConnect allowed origins._
+      `HOSTING.md`, and the pipeline is proven end-to-end (test release `v0.0.1`:
+      Filebase + 4EVERLAND pinned, CID publicly resolvable, reproducible across machines).
+      Remaining: ENS name registration + per-release contenthash updates, WalletConnect
+      allowed origins._
 
 ## Nice to have
 
