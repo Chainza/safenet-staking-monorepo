@@ -63,7 +63,17 @@ Then:
    it as `safenetstake.eth`'s `contenthash` record (e.g. via [app.ens.domains](https://app.ens.domains)
    → the name → Records → Edit → Content Hash). This is a signed on-chain transaction from the
    wallet that owns the name; CI deliberately never holds that key.
-5. Smoke-test paths 1–2: open https://safenetstake.eth.limo (gateways pick the new record up
+5. **Record the ENS update tx in the release notes** — the notes are published with a
+   _pending_ placeholder for it; fill it in with
+
+   ```sh
+   node scripts/record-ens-tx.mjs <tag> <txhash>
+   ```
+
+   (needs an authenticated `gh` CLI), so anyone can verify the on-chain update from the
+   release itself.
+
+6. Smoke-test paths 1–2: open https://safenetstake.eth.limo (gateways pick the new record up
    within minutes).
 
 ## Verifying a release

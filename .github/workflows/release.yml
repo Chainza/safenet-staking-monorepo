@@ -136,6 +136,7 @@ jobs:
           |---|---|
           | **CID** | \`$CID\` |
           | **ENS contenthash** | \`$CONTENTHASH\` |
+          | **ENS update tx** | _pending — recorded via \`scripts/record-ens-tx.mjs\` once the owner signs the contenthash update_ |
 
           ### Access
 
