@@ -1,4 +1,4 @@
-const PREFIX = "[safe-stake-widget]";
+const PREFIX = "[@chainza/safenet-staking-widget]";
 
 /** Thin console wrapper that prefixes every widget log with the package name,
  *  so callers don't repeat the prefix. Use this instead of `console.*`. */

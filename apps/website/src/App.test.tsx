@@ -7,7 +7,7 @@ import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";
 
 // Stub the widget: it's the widget package's concern (and its live on-chain
 // reads have no place here) — under test is the app shell around it.
-vi.mock("safe-stake-widget", () => ({
+vi.mock("@chainza/safenet-staking-widget", () => ({
   Widget: ({ theme }: { theme: string }) => <div data-testid="widget" data-theme={theme} />,
 }));
 

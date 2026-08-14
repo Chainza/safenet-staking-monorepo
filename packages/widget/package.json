@@ -1,7 +1,7 @@
 {
-  "name": "safe-stake-widget",
+  "name": "@chainza/safenet-staking-widget",
   "version": "0.0.0",
-  "description": "Drop-in React widget for SAFE staking, built on safe-stake-core.",
+  "description": "Drop-in React widget for SAFE staking, built on @chainza/safenet-staking-core.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -56,7 +56,7 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.17.0",
-    "safe-stake-core": "workspace:*",
+    "@chainza/safenet-staking-core": "workspace:*",
     "tailwind-merge": "3.6.0",
     "ts-essentials": "10.2.1",
     "zustand": "5.0.14"

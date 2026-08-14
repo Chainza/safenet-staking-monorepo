@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { SafeStakeClient } from "safe-stake-core";
+import type { SafeStakeClient } from "@chainza/safenet-staking-core";
 import { Widget } from "./Widget.js";
 import { useWidgetStore } from "./store.js";
 import { WagmiHarness, mainnetConfig } from "./test/wagmi.js";

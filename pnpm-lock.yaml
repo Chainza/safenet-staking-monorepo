@@ -41,6 +41,9 @@ importers:
 
   apps/website:
     dependencies:
+      '@chainza/safenet-staking-widget':
+        specifier: workspace:*
+        version: link:../../packages/widget
       '@safe-global/safe-apps-provider':
         specifier: 0.18.6
         version: 0.18.6(typescript@6.0.3)(zod@3.25.76)
@@ -71,9 +74,6 @@ importers:
       react-router:
         specifier: 8.3.0
         version: 8.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      safe-stake-widget:
-        specifier: workspace:*
-        version: link:../../packages/widget
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
@@ -157,6 +157,9 @@ importers:
 
   packages/widget:
     dependencies:
+      '@chainza/safenet-staking-core':
+        specifier: workspace:*
+        version: link:../core
       '@radix-ui/react-collapsible':
         specifier: 1.1.20
         version: 1.1.20(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -190,9 +193,6 @@ importers:
       lucide-react:
         specifier: 1.17.0
         version: 1.17.0(react@19.2.6)
-      safe-stake-core:
-        specifier: workspace:*
-        version: link:../core
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0

@@ -1,5 +1,5 @@
 {
-  "name": "safe-stake-core",
+  "name": "@chainza/safenet-staking-core",
   "version": "0.0.0",
   "description": "Headless TypeScript library for SAFE staking contract interaction (viem only).",
   "license": "MIT",

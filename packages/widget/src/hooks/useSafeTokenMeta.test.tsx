@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { SafeStakeClient, TokenMeta } from "safe-stake-core";
+import type { SafeStakeClient, TokenMeta } from "@chainza/safenet-staking-core";
 import { useSafeTokenMeta, SAFE_TOKEN_META_FALLBACK } from "./useSafeTokenMeta.js";
 import { WagmiHarness, mainnetConfig } from "../test/wagmi.js";
 

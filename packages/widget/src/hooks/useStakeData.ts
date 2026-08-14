@@ -1,5 +1,5 @@
 import { type Address } from "viem";
-import type { PendingWithdrawal } from "safe-stake-core";
+import type { PendingWithdrawal } from "@chainza/safenet-staking-core";
 import { ZERO } from "../lib/bigint.js";
 import { useWidgetStore } from "../store.js";
 import { useSafeBalance } from "./useSafeBalance.js";
@@ -11,7 +11,7 @@ import { useWithdrawDelay } from "./useWithdrawDelay.js";
 export type { Validator } from "./useValidators.js";
 
 /** Contract-shaped staking data for the connected account. Every field maps to
- *  a real `safe-stake-core` read; swapping in `createSafeStakeClient` later
+ *  a real `@chainza/safenet-staking-core` read; swapping in `createSafeStakeClient` later
  *  replaces the seed values without touching the component tree. */
 export interface StakeData {
   /** Wallet SAFE balance — live `token.getBalance` read (`useSafeBalance`). */
@@ -38,7 +38,7 @@ export interface StakeViewState extends StakeData {
 
 /**
  * Staking data for the connected account. Every field maps to a live
- * `safe-stake-core` read via its own query hook; the per-field hooks each gate
+ * `@chainza/safenet-staking-core` read via its own query hook; the per-field hooks each gate
  * on the connection and active chain internally, so this aggregator just
  * supplies defaults while their queries are disabled or in flight.
  */

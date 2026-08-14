@@ -1,7 +1,7 @@
 import type { Validator } from "../hooks/useValidators.js";
 import { formatPercent, formatToken, truncateAddress } from "../lib/format.js";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select.js";
-import type { Address } from "safe-stake-core";
+import type { Address } from "@chainza/safenet-staking-core";
 
 export interface ValidatorSelectProps {
   validators: Validator[];

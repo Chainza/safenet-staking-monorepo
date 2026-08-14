@@ -1,9 +1,9 @@
-import type { SafeStakeClient } from "safe-stake-core";
+import type { SafeStakeClient } from "@chainza/safenet-staking-core";
 import { useSanctionsCleared } from "./useIsSanctioned.js";
 import { useSafeStakeClientUnscreened } from "./useSafeStakeClientUnscreened.js";
 
 /**
- * The single seam to core: the full pre-bound `safe-stake-core` client for the
+ * The single seam to core: the full pre-bound `@chainza/safenet-staking-core` client for the
  * active wagmi chain (see `useSafeStakeClientUnscreened` for the binding
  * rules), **gated on sanctions screening — fail-closed**. Until the screen
  * clears the connected wallet (`useSanctionsCleared`: a confirmed

@@ -1,4 +1,4 @@
-import { Widget } from "safe-stake-widget";
+import { Widget } from "@chainza/safenet-staking-widget";
 import type { Theme } from "../theme.js";
 
 /** Home page: the hero copy and the staking widget. */

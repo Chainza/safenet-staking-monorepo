@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { Config } from "wagmi";
-import { KNOWN_DEPLOYMENTS } from "safe-stake-core";
+import { KNOWN_DEPLOYMENTS } from "@chainza/safenet-staking-core";
 import { useSafeStakeClientUnscreened } from "./useSafeStakeClientUnscreened.js";
 import {
   WagmiHarness,

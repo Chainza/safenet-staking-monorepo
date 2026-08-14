@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { TokenMeta } from "safe-stake-core";
+import type { TokenMeta } from "@chainza/safenet-staking-core";
 import { assert } from "ts-essentials";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 

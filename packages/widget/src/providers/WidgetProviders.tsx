@@ -41,7 +41,8 @@ export function WidgetProviders({ mode, walletConnectProjectId, children }: Widg
   if (missingHost) {
     return (
       <div className="safe-stake ss:text-sm ss:text-destructive">
-        safe-stake-widget: mode="inherit" requires the host app to provide a WagmiProvider.
+        @chainza/safenet-staking-widget: mode="inherit" requires the host app to provide a
+        WagmiProvider.
       </div>
     );
   }

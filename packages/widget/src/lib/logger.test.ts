@@ -8,7 +8,7 @@ describe("logger", () => {
     for (const level of ["log", "info", "warn", "error"] as const) {
       const spy = vi.spyOn(console, level).mockImplementation(() => {});
       logger[level]("hello", 42);
-      expect(spy).toHaveBeenCalledWith("[safe-stake-widget]", "hello", 42);
+      expect(spy).toHaveBeenCalledWith("[@chainza/safenet-staking-widget]", "hello", 42);
     }
   });
 });

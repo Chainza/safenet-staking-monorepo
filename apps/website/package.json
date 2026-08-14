@@ -22,7 +22,7 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-router": "8.3.0",
-    "safe-stake-widget": "workspace:*",
+    "@chainza/safenet-staking-widget": "workspace:*",
     "tailwind-merge": "3.6.0",
     "ts-essentials": "10.2.1",
     "viem": "2.51.3",

@@ -39,7 +39,7 @@ export default defineConfig(({ command }) => ({
       command === "serve"
         ? [
             {
-              find: /^safe-stake-widget$/,
+              find: /^@chainza\/safenet-staking-widget$/,
               // Absolute path to the widget's TS source entry (resolved relative to this file
               // so it's independent of the cwd). Uses the `URL` global rather than `node:url`
               // so the config typechecks without pulling in `@types/node`.

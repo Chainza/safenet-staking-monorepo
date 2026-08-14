@@ -1,8 +1,12 @@
 import { useChainId, usePublicClient, useWalletClient } from "wagmi";
-import { createSafeStakeClient, KNOWN_DEPLOYMENTS, type SafeStakeClient } from "safe-stake-core";
+import {
+  createSafeStakeClient,
+  KNOWN_DEPLOYMENTS,
+  type SafeStakeClient,
+} from "@chainza/safenet-staking-core";
 
 /**
- * The pre-compliance `safe-stake-core` client for the **active wagmi chain** —
+ * The pre-compliance `@chainza/safenet-staking-core` client for the **active wagmi chain** —
  * every read/write/encode the package exposes, bound to the current
  * `PublicClient` (and `WalletClient` once connected, enabling writes).
  *

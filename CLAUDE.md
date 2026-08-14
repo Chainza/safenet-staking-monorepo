@@ -17,16 +17,16 @@ All commands run from the repo root and fan out across workspaces via Turborepo.
 Scope to one workspace with `--filter`:
 
 - `pnpm --filter website dev` — boot only the Vite app.
-- `pnpm --filter safe-stake-core test` — test one package.
-- Run a single test file: `pnpm --filter safe-stake-widget exec vitest run src/Widget.test.tsx`.
-- Watch one package's tests: `pnpm --filter safe-stake-core exec vitest`.
+- `pnpm --filter @chainza/safenet-staking-core test` — test one package.
+- Run a single test file: `pnpm --filter @chainza/safenet-staking-widget exec vitest run src/Widget.test.tsx`.
+- Watch one package's tests: `pnpm --filter @chainza/safenet-staking-core exec vitest`.
 
 ## Architecture
 
 A three-layer SAFE staking stack. Each layer is an
 independently publishable artifact; lower layers have no dependency on higher ones.
 
-- **`packages/core` (`safe-stake-core`)** — headless, framework-agnostic TS library for
+- **`packages/core` (`@chainza/safenet-staking-core`)** — headless, framework-agnostic TS library for
   staking contract interaction. **viem only** — must not gain a React, wagmi, or DOM
   dependency. This is the resilience boundary: core flows stay usable from any JS environment.
   - **Core never creates a viem client, transport, or RPC connection.** Every read takes a
@@ -64,7 +64,7 @@ account)` queries the Chainalysis on-chain sanctions oracle (`SanctionsList`, ma
 addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transport).
     `resolveConfig(input?)` merges built-in `KNOWN_DEPLOYMENTS` (mainnet) with per-address
     overrides and checksums via `getAddress`; defaults to mainnet.
-- **`packages/widget` (`safe-stake-widget`)** — React component (`<Widget />`) built
+- **`packages/widget` (`@chainza/safenet-staking-widget`)** — React component (`<Widget />`) built
   on core. The `mode` prop has three values: **`"auto"` (default)** detects a host `WagmiProvider`
   and reuses it, falling back to the widget's own config when none is found; `"standalone"` always
   mounts its own; `"inherit"` always consumes the host's (and renders guidance if absent). `react`,
@@ -107,12 +107,12 @@ The website imports the widget from its **built `dist/`** (via package `exports`
 widget must be built before the app resolves it — `turbo build` handles ordering.
 
 **Widget HMR in the website (dev only).** Rather than running the widget's `dev --watch`
-(tsup rebuild → full reload), the website's `vite.config.ts` aliases `safe-stake-widget` to
+(tsup rebuild → full reload), the website's `vite.config.ts` aliases `@chainza/safenet-staking-widget` to
 the widget's **TS source** (`packages/widget/src/index.ts`) when `command === "serve"`, so
 widget edits hot-reload via React Fast Refresh with no rebuild. Production `vite build` (and
 `turbo build`) drop the alias and consume the published `dist/`, keeping the real artifact
-boundary intact. **Only the widget is aliased** — `safe-stake-core` still resolves to its
-`dist/`, so a _new_ core export needs `pnpm --filter safe-stake-core build` before the dev
+boundary intact. **Only the widget is aliased** — `@chainza/safenet-staking-core` still resolves to its
+`dist/`, so a _new_ core export needs `pnpm --filter @chainza/safenet-staking-core build` before the dev
 server can see it (until then HMR fails with `does not provide an export named …`). Two
 requirements make this work: (1) `resolve.dedupe` lists the shared peers
 (`react`/`react-dom`/`wagmi`/`viem`/`@tanstack/react-query`) — without it the widget source
@@ -299,8 +299,8 @@ useSafeTokenMeta()`), no default needed. To stop `initialData` from pinning the 
 
 Cover with tests everything that makes sense to test:
 
-- **`safe-stake-core`** — every exported function (and the public behavior of exported types/clients).
-- **`safe-stake-widget`** — every component and every hook (plus any exported utilities).
+- **`@chainza/safenet-staking-core`** — every exported function (and the public behavior of exported types/clients).
+- **`@chainza/safenet-staking-widget`** — every component and every hook (plus any exported utilities).
 - **`website`** — every component and every hook (plus any non-trivial app logic).
 
 Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdom` +
@@ -401,10 +401,12 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   expected _answer_ (the reward proof's 404) with `validateStatus`. Tests stub the seam
   (`vi.mock("../lib/http.js", …)`), never `globalThis.fetch`.
 - **Logging:** use `lib/logger.ts` (`logger.log`/`info`/`warn`/`error`) instead of `console.*` in
-  the widget — it prefixes every line with `[safe-stake-widget]`, so callers never repeat it.
-- **Package names are not final.** `safe-stake-core` / `safe-stake-widget` (and the eventual
-  `@scope`) are placeholders pending npm availability and will be renamed later — don't treat
-  the current names as stable.
+  the widget — it prefixes every line with `[@chainza/safenet-staking-widget]`, so callers never repeat it.
+- **Package names are final.** `@chainza/safenet-staking-core` / `@chainza/safenet-staking-widget`
+  are published on npm under the operator's `@chainza` org — treat them as stable API. Runtime
+  identifiers deliberately keep the brand-neutral `safe-stake` naming (the `.safe-stake` CSS
+  scope, the `"safe-stake"` query-key namespace, `createSafeStakeClient`, the `ss:` Tailwind
+  prefix) — they are consumer-facing API surface, not package references.
 
 ## Widget UI conventions
 
