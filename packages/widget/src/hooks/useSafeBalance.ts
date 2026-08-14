@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
+import { assert } from "ts-essentials";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
 /** Key for the `useSafeBalance` query. `undefined` segments (no client/account
@@ -22,9 +23,10 @@ export function useSafeBalance() {
     queryKey: safeBalanceQueryKey(client?.config.chainId, address),
     enabled: client !== undefined && address !== undefined,
     queryFn: () => {
-      if (client === undefined || address === undefined) {
-        throw new Error("balance queryFn ran without a client or account");
-      }
+      assert(
+        client !== undefined && address !== undefined,
+        "balance queryFn ran without a client or account",
+      );
       return client.token.getBalance(address);
     },
   });

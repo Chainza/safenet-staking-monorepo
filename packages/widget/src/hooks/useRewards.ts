@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
+import { assert } from "ts-essentials";
 import { ZERO } from "../lib/bigint.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useRewardProof } from "./useRewardProof.js";
@@ -46,9 +47,10 @@ export function useRewards(): RewardsData {
     queryKey: cumulativeClaimedQueryKey(chainId, address),
     enabled: client !== undefined && hasProof && address !== undefined,
     queryFn: () => {
-      if (client === undefined || address === undefined) {
-        throw new Error("cumulative-claimed queryFn ran without a client or account");
-      }
+      assert(
+        client !== undefined && address !== undefined,
+        "cumulative-claimed queryFn ran without a client or account",
+      );
       return client.rewards.getCumulativeClaimed(address);
     },
   });
@@ -57,9 +59,7 @@ export function useRewards(): RewardsData {
     queryKey: merkleRootQueryKey(chainId),
     enabled: client !== undefined && hasProof,
     queryFn: () => {
-      if (client === undefined) {
-        throw new Error("merkle-root queryFn ran without a client");
-      }
+      assert(client !== undefined, "merkle-root queryFn ran without a client");
       return client.rewards.getMerkleRoot();
     },
   });

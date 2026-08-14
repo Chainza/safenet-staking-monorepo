@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { WagmiProvider } from "wagmi";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter } from "react-router";
+import { assert } from "ts-essentials";
 import App from "./App.js";
 import { applyTheme, getInitialTheme } from "./theme.js";
 import { queryClient, wagmiConfig } from "./wagmi.js";
@@ -12,9 +13,7 @@ import "./index.css";
 applyTheme(getInitialTheme());
 
 const rootElement = document.getElementById("root");
-if (!rootElement) {
-  throw new Error("Root element #root not found");
-}
+assert(rootElement, "Root element #root not found");
 
 createRoot(rootElement).render(
   <StrictMode>

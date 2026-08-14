@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAddress, type Address } from "viem";
+import { assert } from "ts-essentials";
 import { ZERO } from "../lib/bigint.js";
 import { http } from "../lib/http.js";
 import { useSanctionsCleared } from "./useIsSanctioned.js";
@@ -87,9 +88,7 @@ export function useValidators(): Validator[] {
     queryKey: validatorStakesQueryKey(client?.config.chainId, addresses),
     enabled: client !== undefined && addresses.length > 0,
     queryFn: () => {
-      if (client === undefined) {
-        throw new Error("validator-stakes queryFn ran without a client");
-      }
+      assert(client !== undefined, "validator-stakes queryFn ran without a client");
       return Promise.all(
         addresses.map((address) => client.staking.getTotalValidatorStakes(address)),
       );

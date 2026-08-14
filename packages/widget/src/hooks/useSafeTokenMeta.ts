@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { TokenMeta } from "safe-stake-core";
+import { assert } from "ts-essentials";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
 /** Key for the `useSafeTokenMeta` query. The `undefined` chain segment only
@@ -41,9 +42,7 @@ export function useSafeTokenMeta() {
     initialDataUpdatedAt: 0,
     refetchOnMount: "always",
     queryFn: () => {
-      if (client === undefined) {
-        throw new Error("token-meta queryFn ran without a client");
-      }
+      assert(client !== undefined, "token-meta queryFn ran without a client");
       return client.token.getMeta();
     },
   });

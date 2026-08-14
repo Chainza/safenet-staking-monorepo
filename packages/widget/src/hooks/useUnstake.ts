@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConnection, usePublicClient } from "wagmi";
 import type { Address, Hash } from "viem";
+import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { withdrawalsQueryKey } from "./useWithdrawals.js";
@@ -30,9 +31,10 @@ export function useUnstake() {
 
   return useMutation({
     mutationFn: async ({ validator, amount }: UnstakeVars): Promise<Hash> => {
-      if (client === undefined || address === undefined || publicClient === undefined) {
-        throw new Error("unstake requires a connected wallet on a supported chain");
-      }
+      assert(
+        client !== undefined && address !== undefined && publicClient !== undefined,
+        "unstake requires a connected wallet on a supported chain",
+      );
 
       const hash = await client.staking.initiateWithdrawal(validator, amount);
       await publicClient.waitForTransactionReceipt({ hash });

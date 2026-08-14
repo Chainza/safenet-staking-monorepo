@@ -1,4 +1,5 @@
 import type { Address, Hex, PublicClient } from "viem";
+import { assert } from "ts-essentials";
 import {
   isResolvedConfig,
   resolveConfig,
@@ -41,11 +42,10 @@ export function createSafeStakeClient(params: CreateSafeStakeClientParams) {
     params.config && isResolvedConfig(params.config) ? params.config : resolveConfig(params.config);
 
   const requireWallet = (): ConnectedWalletClient => {
-    if (!walletClient) {
-      throw new Error(
-        "This operation requires a walletClient. Pass one to createSafeStakeClient({ walletClient }).",
-      );
-    }
+    assert(
+      walletClient,
+      "This operation requires a walletClient. Pass one to createSafeStakeClient({ walletClient }).",
+    );
     return walletClient;
   };
 

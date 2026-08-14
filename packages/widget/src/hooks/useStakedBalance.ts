@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
+import { assert } from "ts-essentials";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
 /** Key for the `useStakedBalance` query. `undefined` segments (no
@@ -27,9 +28,10 @@ export function useStakedBalance(validator: Address | undefined) {
     queryKey: stakedBalanceQueryKey(client?.config.chainId, address, validator),
     enabled: client !== undefined && address !== undefined && validator !== undefined,
     queryFn: () => {
-      if (client === undefined || address === undefined || validator === undefined) {
-        throw new Error("staked-balance queryFn ran without a client, account or validator");
-      }
+      assert(
+        client !== undefined && address !== undefined && validator !== undefined,
+        "staked-balance queryFn ran without a client, account or validator",
+      );
       return client.staking.getStake(address, validator);
     },
   });

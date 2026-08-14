@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
+import { assert } from "ts-essentials";
 import { useSafeStakeClientUnscreened } from "./useSafeStakeClientUnscreened.js";
 
 /** Key for the `useIsSanctioned` query. `undefined` segments (no client/account
@@ -30,9 +31,10 @@ export function useIsSanctioned() {
     enabled: client !== undefined && address !== undefined,
     staleTime: 3_600_000,
     queryFn: () => {
-      if (client === undefined || address === undefined) {
-        throw new Error("sanctioned queryFn ran without a client or account");
-      }
+      assert(
+        client !== undefined && address !== undefined,
+        "sanctioned queryFn ran without a client or account",
+      );
       return client.sanctions.isSanctioned(address);
     },
   });

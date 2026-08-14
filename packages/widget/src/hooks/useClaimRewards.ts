@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConnection, usePublicClient } from "wagmi";
 import type { Hash } from "viem";
+import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useRewardProof, rewardProofQueryKey } from "./useRewardProof.js";
@@ -27,12 +28,11 @@ export function useClaimRewards() {
 
   return useMutation({
     mutationFn: async (): Promise<Hash> => {
-      if (client === undefined || address === undefined || publicClient === undefined) {
-        throw new Error("claim rewards requires a connected wallet on a supported chain");
-      }
-      if (!proof?.proof) {
-        throw new Error("claim rewards requires a published reward proof");
-      }
+      assert(
+        client !== undefined && address !== undefined && publicClient !== undefined,
+        "claim rewards requires a connected wallet on a supported chain",
+      );
+      assert(proof?.proof, "claim rewards requires a published reward proof");
 
       const hash = await client.rewards.claim(
         address,

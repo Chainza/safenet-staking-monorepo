@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConnection, usePublicClient } from "wagmi";
 import type { Address, Hash } from "viem";
+import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { safeBalanceQueryKey } from "./useSafeBalance.js";
@@ -39,9 +40,10 @@ export function useStake() {
 
   const mutation = useMutation({
     mutationFn: async ({ validator, amount }: StakeVars): Promise<Hash> => {
-      if (client === undefined || address === undefined || publicClient === undefined) {
-        throw new Error("stake requires a connected wallet on a supported chain");
-      }
+      assert(
+        client !== undefined && address !== undefined && publicClient !== undefined,
+        "stake requires a connected wallet on a supported chain",
+      );
 
       const allowance = await client.token.getAllowance(address);
       if (allowance < amount) {

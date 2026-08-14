@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { assert } from "ts-essentials";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 
 /** Key for the `useWithdrawDelay` query. The `undefined` chain segment only
@@ -19,9 +20,7 @@ export function useWithdrawDelay() {
     queryKey: withdrawDelayQueryKey(client?.config.chainId),
     enabled: client !== undefined,
     queryFn: () => {
-      if (client === undefined) {
-        throw new Error("withdraw-delay queryFn ran without a client");
-      }
+      assert(client !== undefined, "withdraw-delay queryFn ran without a client");
       return client.staking.getWithdrawDelay();
     },
   });

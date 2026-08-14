@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import axios from "axios";
 import type { Address, Hash } from "viem";
+import { assert } from "ts-essentials";
 
 /** Base URL of the Indexer API (`GET /stakers/{staker}`). */
 export const INDEXER_API_URL = "https://safenet-indexer-fd4d1daccef6.herokuapp.com";
@@ -85,9 +86,7 @@ export function useStakerTransactions({ limit, offset }: UseStakerTransactionsOp
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     queryFn: async (): Promise<StakerTransactions> => {
-      if (address === undefined) {
-        throw new Error("staker-transactions queryFn ran without an account");
-      }
+      assert(address !== undefined, "staker-transactions queryFn ran without an account");
       // axios drops undefined params and throws on non-2xx responses.
       const response = await axios.get<StakerTransactions>(
         `${INDEXER_API_URL}/stakers/${address.toLowerCase()}`,

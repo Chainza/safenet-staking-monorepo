@@ -1,4 +1,5 @@
 import { getAddress, type Address } from "viem";
+import { assert } from "ts-essentials";
 
 /**
  * Addresses of the on-chain contracts the core library interacts with, for a
@@ -64,22 +65,19 @@ export function resolveConfig(input: SafeStakeConfigInput = {}): SafeStakeConfig
   const base = KNOWN_DEPLOYMENTS[chainId] ?? {};
   const merged: Partial<ContractAddresses> = { ...base, ...input.addresses };
 
-  if (!merged.staking) {
-    throw new Error(`No staking address for chain ${chainId}. Pass addresses.staking to override.`);
-  }
-  if (!merged.token) {
-    throw new Error(`No token address for chain ${chainId}. Pass addresses.token to override.`);
-  }
-  if (!merged.merkleDrop) {
-    throw new Error(
-      `No merkleDrop address for chain ${chainId}. Pass addresses.merkleDrop to override.`,
-    );
-  }
-  if (!merged.sanctionsList) {
-    throw new Error(
-      `No sanctionsList address for chain ${chainId}. Pass addresses.sanctionsList to override.`,
-    );
-  }
+  assert(
+    merged.staking,
+    `No staking address for chain ${chainId}. Pass addresses.staking to override.`,
+  );
+  assert(merged.token, `No token address for chain ${chainId}. Pass addresses.token to override.`);
+  assert(
+    merged.merkleDrop,
+    `No merkleDrop address for chain ${chainId}. Pass addresses.merkleDrop to override.`,
+  );
+  assert(
+    merged.sanctionsList,
+    `No sanctionsList address for chain ${chainId}. Pass addresses.sanctionsList to override.`,
+  );
 
   const addresses: ContractAddresses = {
     staking: getAddress(merged.staking),

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // Print the ENS contenthash (ENSIP-7) for a CIDv1 base32 string:
-// 0x + varint(ipfs-ns = 0xe3) + raw CID bytes. Zero dependencies so the
-// release workflow (and anyone verifying a release) can run it standalone.
+// 0x + varint(ipfs-ns = 0xe3) + raw CID bytes. Zero dependencies (node builtins
+// only) so the release workflow — and anyone verifying a release — can run it
+// standalone.
 //
 // Usage: node scripts/ens-contenthash.mjs bafybei...
+
+import assert from "node:assert/strict";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"; // RFC 4648 base32, lowercase
 
@@ -13,7 +16,7 @@ function base32Decode(input) {
   const out = [];
   for (const char of input) {
     const index = ALPHABET.indexOf(char);
-    if (index === -1) throw new Error(`invalid base32 character: ${char}`);
+    assert(index !== -1, `invalid base32 character: ${char}`);
     value = (value << 5) | index;
     bits += 5;
     if (bits >= 8) {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address, Hex } from "viem";
+import { assert } from "ts-essentials";
 import { http } from "../lib/http.js";
 import { useSanctionsCleared } from "./useIsSanctioned.js";
 
@@ -56,9 +57,7 @@ export function useRewardProof() {
     enabled: address !== undefined && cleared,
     staleTime: 300_000,
     queryFn: async (): Promise<RewardProof | null> => {
-      if (address === undefined) {
-        throw new Error("reward-proof queryFn ran without an account");
-      }
+      assert(address !== undefined, "reward-proof queryFn ran without an account");
       // A 404 is an expected answer ("never accrued rewards"), so it's widened
       // into the success range; every other non-2xx throws, as axios does by
       // default, and surfaces as a query error.

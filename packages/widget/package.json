@@ -58,6 +58,7 @@
     "lucide-react": "1.17.0",
     "safe-stake-core": "workspace:*",
     "tailwind-merge": "3.6.0",
+    "ts-essentials": "10.2.1",
     "zustand": "5.0.14"
   },
   "devDependencies": {
