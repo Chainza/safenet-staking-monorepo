@@ -142,6 +142,12 @@ Outside the repo:
 Staging (Vercel) keeps deploying from `main` independently of this pipeline — see
 [apps/website/vercel.json](apps/website/vercel.json). Production is IPFS + ENS only.
 
+That file sets `github.deploymentEnabled: false` so Vercel doesn't record GitHub Deployments.
+Vercel labels a deploy from the production branch `Production` and the name can't be changed,
+which put a "Production" environment on the repo page pointing at staging — the opposite of
+where production lives. Releases are the IPFS ones above; the repo shouldn't advertise
+anything else as production.
+
 ## npm package releases
 
 `@chainza/safenet-staking-core` and `@chainza/safenet-staking-widget` are published **by

@@ -397,7 +397,10 @@ Today core sits at ~70% with everything at 100% except `client.ts` (the bound
   directory, missing fields fall back to framework defaults (which broke the build with a wrong
   `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
   `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
-  from there because pnpm and turbo walk up to the workspace root.
+  from there because pnpm and turbo walk up to the workspace root. It also sets
+  **`github.deploymentEnabled: false`** — Vercel names a production-branch deploy `Production`
+  and that name can't be overridden, so leaving it on advertises a "Production" environment on
+  the repo page that points at _staging_. Production is IPFS + ENS; don't re-enable it.
 - **npm publishing is manual on purpose — CI holds no registry credentials.** `pnpm release
 <core|widget>` (`scripts/release-package.mjs`) runs the preflight and packs the tarball, the
   maintainer runs `npm publish <tarball> --otp …` by hand, then `pnpm release <pkg> --record`
