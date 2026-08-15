@@ -41,6 +41,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -48,6 +49,7 @@
     "viem": "^2.0.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "4.1.7",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "viem": "2.51.3",

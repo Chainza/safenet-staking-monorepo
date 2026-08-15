@@ -48,6 +48,7 @@
     "build:css": "postcss src/styles.css -o dist/styles.css",
     "dev": "tsup --watch",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -73,6 +74,7 @@
     }
   },
   "dependencies": {
+    "@chainza/safenet-staking-core": "workspace:*",
     "@radix-ui/react-collapsible": "1.1.20",
     "@radix-ui/react-select": "2.2.6",
     "@radix-ui/react-slot": "1.2.4",
@@ -81,7 +83,6 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.17.0",
-    "@chainza/safenet-staking-core": "workspace:*",
     "tailwind-merge": "3.6.0",
     "ts-essentials": "10.2.1",
     "zustand": "5.0.14"
@@ -95,6 +96,7 @@
     "@types/babel__core": "7.20.5",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
+    "@vitest/coverage-v8": "4.1.7",
     "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "29.1.1",
     "postcss": "8.5.15",

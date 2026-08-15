@@ -33,8 +33,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
+      # Runs the same suites as `pnpm test`, with coverage instrumentation and
+      # each workspace's floors enforced (see its vitest.config.ts), so this
+      # replaces a separate test step rather than adding a second run.
+      - name: Test (with coverage)
+        run: pnpm coverage
 
   circular:
     runs-on: ubuntu-latest

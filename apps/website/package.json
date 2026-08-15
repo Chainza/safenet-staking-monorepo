@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@chainza/safenet-staking-widget": "workspace:*",
     "@safe-global/safe-apps-provider": "0.18.6",
     "@safe-global/safe-apps-sdk": "9.1.0",
     "@tanstack/react-query": "5.100.14",
@@ -22,7 +24,6 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-router": "8.3.0",
-    "@chainza/safenet-staking-widget": "workspace:*",
     "tailwind-merge": "3.6.0",
     "ts-essentials": "10.2.1",
     "viem": "2.51.3",
@@ -38,6 +39,7 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "@vitest/coverage-v8": "4.1.7",
     "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "29.1.1",
     "tailwindcss": "4.3.0",
