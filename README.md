@@ -42,6 +42,7 @@ All run from the repo root and fan out across workspaces via Turborepo:
 | `pnpm build`     | Build all packages (core → widget → website) |
 | `pnpm dev`       | Run all dev tasks (watch mode)               |
 | `pnpm test`      | Run Vitest across packages                   |
+| `pnpm coverage`  | Vitest with v8 coverage (floors enforced)    |
 | `pnpm typecheck` | `tsc --noEmit` across workspaces             |
 | `pnpm lint`      | ESLint across workspaces                     |
 | `pnpm format`    | Prettier write (`format:check` to verify)    |

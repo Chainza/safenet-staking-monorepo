@@ -11,6 +11,7 @@ All commands run from the repo root and fan out across workspaces via Turborepo.
 - `pnpm typecheck` — `tsc --noEmit` across all workspaces.
 - `pnpm lint` — ESLint across all workspaces.
 - `pnpm test` — Vitest (`vitest run`) across packages.
+- `pnpm coverage` — the same suites with v8 coverage, each workspace enforcing its floors.
 - `pnpm format` / `pnpm format:check` — Prettier write / check.
 - `pnpm circular` — madge scan for circular dependencies across all workspace `src` dirs.
 
@@ -305,6 +306,16 @@ Cover with tests everything that makes sense to test:
 
 Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdom` +
 `@testing-library/react`; core tests run in the default Node environment.
+
+**Coverage is measured and enforced.** `pnpm coverage` runs the suites under the v8 provider;
+each workspace's `vitest.config.ts` carries `coverage.thresholds` set to what the suite covers
+**today**, so any drop fails CI (the `Test (with coverage)` step replaces a plain test run —
+never add a second one). They are floors, not targets: raise them when coverage improves,
+and don't lower them to make a change pass. `include` is the whole of `src` with `all: true`,
+so an untested module reports 0% instead of vanishing from the report; exclusions are limited
+to test scaffolding (`src/test/**`), the app's DOM bootstrap (`main.tsx`) and ambient types.
+Today core sits at ~70% with everything at 100% except `client.ts` (the bound
+`createSafeStakeClient` surface is untested), the widget at ~98%, the website at ~85%.
 
 ## Conventions that bite
 
