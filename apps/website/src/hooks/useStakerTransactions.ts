@@ -5,7 +5,7 @@ import type { Address, Hash } from "viem";
 import { assert } from "ts-essentials";
 
 /** Base URL of the Indexer API (`GET /stakers/{staker}`). */
-export const INDEXER_API_URL = "https://safenet-indexer-fd4d1daccef6.herokuapp.com";
+export const INDEXER_API_URL = "https://api.chainza.io/safenet";
 
 const REFETCH_INTERVAL_MS = 20_000;
 
