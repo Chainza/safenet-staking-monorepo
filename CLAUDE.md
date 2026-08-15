@@ -381,6 +381,19 @@ Tests live next to source (`*.test.ts` / `*.test.tsx`). The widget/app use `jsdo
   `build/` output dir), not to whatever worked before. Paths/commands in it are relative to
   `apps/website`; the pnpm install and `pnpm turbo run build --filter=website...` still work
   from there because pnpm and turbo walk up to the workspace root.
+- **npm publishing is manual on purpose — CI holds no registry credentials.** `pnpm release
+<core|widget>` (`scripts/release-package.mjs`) runs the preflight and packs the tarball, the
+  maintainer runs `npm publish <tarball> --otp …` by hand, then `pnpm release <pkg> --record`
+  verifies the registry's `dist.integrity` matches those exact bytes and pushes a per-package
+  tag (`core-v*` / `widget-v*`) plus a GitHub Release. Consequences to keep in mind: **npm
+  provenance is unavailable** (`--provenance` needs an OIDC-capable CI runner), so the
+  tag + integrity record _is_ the version→commit mapping; `pnpm pack` is byte-deterministic,
+  which is what makes that record verifiable, so don't introduce timestamps or other
+  nondeterminism into `dist/`; **core must be published before the widget is packed**, since
+  packing rewrites `workspace:*` to the exact core version; and the per-package tag prefixes
+  must never start with `v` or they'd fire the website's `release.yml`. Full procedure in
+  `HOSTING.md`. Flipping to real provenance later means one `workflow_dispatch` job — the
+  only change being _where_ `npm publish` runs.
 - **Invariants: `assert`, not `if (…) throw new Error(…)`.** Every workspace uses
   `import { assert } from "ts-essentials"` — `assert(condition, message)` is typed
   `asserts condition`, so a guard is one call and the checked values stay narrowed for the rest of

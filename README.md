@@ -50,7 +50,14 @@ All run from the repo root and fan out across workspaces via Turborepo:
 
 The reference UI is live at [safenetstake.eth.limo](https://safenetstake.eth.limo)
 (`safenetstake.eth`), deployed to **IPFS + ENS** with five independent access paths;
-releases are reproducible and verifiable by CID. See [`HOSTING.md`](HOSTING.md).
+releases are reproducible and verifiable by CID.
+
+The npm packages are published manually (no registry credentials in CI) via
+`pnpm release <core|widget>`, which packs the tarball, then tags it and records its sha512
+integrity in a GitHub Release — so any published version maps back to a commit whose source
+re-packs to the same bytes.
+
+Both processes are documented in [`HOSTING.md`](HOSTING.md).
 
 ## Contributing
 

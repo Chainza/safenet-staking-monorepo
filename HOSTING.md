@@ -5,6 +5,9 @@ The reference UI is a fully static bundle deployed to **IPFS** and named via **E
 every layer — multiple independent pinning services hold the content, the name resolves
 on-chain, and anyone can re-host a release from its published CID.
 
+The two npm packages are released separately and by hand — see
+[npm package releases](#npm-package-releases) at the end of this document.
+
 ## The five access paths
 
 Every production release is reachable through five independent paths. No single provider,
@@ -138,3 +141,90 @@ Outside the repo:
 
 Staging (Vercel) keeps deploying from `main` independently of this pipeline — see
 [apps/website/vercel.json](apps/website/vercel.json). Production is IPFS + ENS only.
+
+## npm package releases
+
+`@chainza/safenet-staking-core` and `@chainza/safenet-staking-widget` are published **by
+hand**, from a maintainer's machine. CI holds no registry credentials — no npm token is
+stored in the repo, and no workflow can publish. What CI would otherwise buy us is
+[npm provenance](https://docs.npmjs.com/generating-provenance-statements) (a sigstore
+attestation binding a tarball to the workflow run that built it); `npm publish --provenance`
+only works on an OIDC-capable CI runner, so it is deliberately not available here. The
+tag-and-record step below is the substitute: it makes the version-to-commit mapping public
+and independently checkable, without a long-lived credential existing anywhere.
+
+[scripts/release-package.mjs](scripts/release-package.mjs) drives it in two phases, either
+side of the one command a human runs.
+
+### Cutting a release
+
+1. **Bump** the version in the package's `package.json` and add its `## [x.y.z]` section to
+   the package's `CHANGELOG.md`. Commit and push — releases are cut from a clean `main`.
+2. **Preflight and pack** (`core` or `widget`):
+
+   ```sh
+   pnpm release core
+   ```
+
+   This refuses to continue unless the worktree is clean, `HEAD` is `origin/main`, the
+   version is absent from npm (registry versions are immutable) and untagged, and the
+   CHANGELOG documents it. Then it force-rebuilds the package, runs its tests, packs it into
+   `.release/` and asserts the **tarball** is sound: no `workspace:` range survived packing,
+   `LICENSE`/`README.md`/`CHANGELOG.md` are inside, and every `@chainza/*` dependency it
+   pins already exists on npm. It prints the tarball's **integrity** (sha512, npm's own
+   `dist.integrity` format) and the two commands below.
+
+3. **Publish that exact tarball** — never a fresh `pnpm publish`, whose bytes the recorded
+   integrity would not describe:
+
+   ```sh
+   npm publish .release/core-<version>.tgz --access public --otp <code>
+   ```
+
+4. **Record it:**
+
+   ```sh
+   pnpm release core --record
+   ```
+
+   This re-reads `dist.integrity` from the registry and asserts npm is serving exactly the
+   bytes that were packed, then pushes the `core-v<version>` tag and opens a GitHub Release
+   carrying the CHANGELOG section, the integrity, the reproduction recipe and the tarball
+   itself.
+
+**Order matters when both packages move:** `pnpm pack` rewrites the widget's
+`"@chainza/safenet-staking-core": "workspace:*"` into the exact version in the workspace, so
+core must be published **before** the widget is packed — otherwise the widget's tarball pins
+a version nobody can install. The preflight enforces this rather than trusting the
+maintainer to remember it.
+
+Tags are per package (`core-v0.1.1`, `widget-v0.1.1`). They deliberately do not match the
+website pipeline's `v*` trigger — GitHub anchors tag globs at the start, so `core-v*` tags
+never fire [release.yml](.github/workflows/release.yml).
+
+### Verifying a published package
+
+`pnpm pack` is deterministic — the same source tree packs to byte-identical bytes — so the
+tarball on npm is reproducible from its tag, exactly like the website bundle is from its CID:
+
+```sh
+git checkout core-v<version>
+pnpm install --frozen-lockfile
+pnpm turbo run build --filter=@chainza/safenet-staking-core...
+cd packages/core && pnpm pack --out /tmp/core.tgz
+openssl dgst -sha512 -binary /tmp/core.tgz | openssl base64 -A
+```
+
+Prefixed with `sha512-`, that must equal both the integrity in the GitHub Release notes and
+the registry's own value:
+
+```sh
+npm view @chainza/safenet-staking-core@<version> dist.integrity
+```
+
+Equality means the published artifact contains nothing that isn't in the tagged source.
+
+### One-time setup
+
+Only an npm account with publish rights on the `@chainza` scope (2FA on, hence `--otp`) and
+an authenticated `gh` CLI for the recording step. Nothing to configure in the repo.
