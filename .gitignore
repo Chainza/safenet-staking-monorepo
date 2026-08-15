@@ -6,6 +6,8 @@ build
 !.env.example
 .turbo
 coverage
+# Tarballs staged by scripts/release-package.mjs
+.release
 *.tsbuildinfo
 .DS_Store
 

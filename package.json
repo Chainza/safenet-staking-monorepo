@@ -15,6 +15,7 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "release": "node scripts/release-package.mjs",
     "circular": "madge --circular --extensions ts,tsx --ts-config tsconfig.base.json packages/core/src packages/widget/src apps/website/src",
     "clean": "turbo run clean && rm -rf node_modules"
   },
