@@ -83,8 +83,14 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
   **On-chain data hooks**). See **Wallet integration**, **On-chain data hooks** and
   **Widget UI conventions** below.
 - **`apps/website` (`website`)** — Vite reference app consuming the widget. Private, not published.
-  - **Legal pages** — `/imprint`, `/terms`, `/privacy` (react-router routes on the shared
-    `LegalArticle` shell, linked from the `Footer`). The operator is LLC "CHAINZA" (Uzhhorod,
+  - **Article pages** — `/docs`, `/imprint`, `/terms`, `/privacy` (react-router routes on the
+    shared `LegalArticle` shell — pass `eyebrow` to override its `SAFENET · LEGAL` default —
+    all linked from the `Footer`'s internal group). **`/docs` is the public developer
+    documentation** (the M3 deliverable): what the three packages are, install, `<Widget />`
+    quick start + props, the headless-core snippet, compliance, and how to verify or self-host a
+    release. It mirrors the two package READMEs — change them together, and don't let it drift
+    into API reference (there is no generated docs build). Its footer label is **"Developers"**,
+    not "Docs", because the footer already links Safe's protocol docs under that name. The operator is LLC "CHAINZA" (Uzhhorod,
     Ukraine; director Vladyslav Myronenko; site https://chainza.io/; contact email
     connect@chainza.io — the only address to ever use on these pages). Governing law is Ukraine.
     Don't invent registration/VAT numbers; the privacy policy must list exactly the services the
