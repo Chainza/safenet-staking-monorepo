@@ -11,8 +11,11 @@ const FOOTER_LINKS = [
   { label: "Staking Risks", href: "https://docs.safefoundation.org/safenet/staking/risk" },
 ] as const;
 
-/** Internal legal pages — routed, not external, hence no new tab / arrow. */
-const LEGAL_LINKS = [
+/** Internal pages — routed, not external, hence no new tab / arrow. "Developers"
+ *  rather than "Docs": the external "Docs" above is Safe's protocol
+ *  documentation, this one is the integration guide for our own packages. */
+const INTERNAL_LINKS = [
+  { label: "Developers", to: "/docs" },
   { label: "Imprint", to: "/imprint" },
   { label: "Terms", to: "/terms" },
   { label: "Privacy", to: "/privacy" },
@@ -22,14 +25,14 @@ const linkBase = "flex items-center gap-1 text-sm font-medium transition-colors"
 
 const linkClass = `${linkBase} text-[var(--page-muted)] hover:text-[var(--page-fg)]`;
 
-/** The currently open legal page reads slightly stronger (fg, not muted). */
-const legalLinkClass = ({ isActive }: { isActive: boolean }) =>
+/** The currently open internal page reads slightly stronger (fg, not muted). */
+const internalLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? `${linkBase} text-[var(--page-fg)]` : linkClass;
 
 /**
- * Page footer: external Safenet resources (explorer, FAQ, docs) plus the
- * operator's legal pages. Mirrors the header's border/tone so the shell reads
- * as one frame.
+ * Page footer: external Safenet resources (explorer, FAQ, docs) plus this
+ * site's own pages — the developer documentation and the operator's legal
+ * pages. Mirrors the header's border/tone so the shell reads as one frame.
  */
 export function Footer() {
   return (
@@ -40,8 +43,8 @@ export function Footer() {
           <ArrowUpRight className="size-4" />
         </a>
       ))}
-      {LEGAL_LINKS.map(({ label, to }) => (
-        <NavLink key={to} to={to} className={legalLinkClass}>
+      {INTERNAL_LINKS.map(({ label, to }) => (
+        <NavLink key={to} to={to} className={internalLinkClass}>
           {label}
         </NavLink>
       ))}

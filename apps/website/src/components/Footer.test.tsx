@@ -11,7 +11,8 @@ const externalLinks = [
   { name: /staking risks/i, href: "https://docs.safefoundation.org/safenet/staking/risk" },
 ];
 
-const legalLinks = [
+const internalLinks = [
+  { name: /developers/i, href: "/docs" },
   { name: /imprint/i, href: "/imprint" },
   { name: /terms/i, href: "/terms" },
   { name: /privacy/i, href: "/privacy" },
@@ -34,7 +35,7 @@ describe("Footer", () => {
     expect(link.getAttribute("rel")).toBe("noreferrer");
   });
 
-  it.each(legalLinks)("routes to the internal legal page $href", ({ name, href }) => {
+  it.each(internalLinks)("routes to the internal page $href", ({ name, href }) => {
     renderFooter();
 
     const link = screen.getByRole("link", { name });
@@ -43,13 +44,13 @@ describe("Footer", () => {
     expect(link.getAttribute("target")).toBeNull();
   });
 
-  it("renders exactly the eight links", () => {
+  it("renders exactly the nine links", () => {
     renderFooter();
 
-    expect(screen.getAllByRole("link")).toHaveLength(8);
+    expect(screen.getAllByRole("link")).toHaveLength(9);
   });
 
-  it("marks only the currently open legal page's link as current", () => {
+  it("marks only the currently open internal page's link as current", () => {
     render(
       <MemoryRouter initialEntries={["/terms"]}>
         <Footer />

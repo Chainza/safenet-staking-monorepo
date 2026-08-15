@@ -4,16 +4,23 @@ export interface LegalArticleProps {
   title: string;
   /** Human-readable revision date, e.g. "4 August 2026". */
   updated: string;
+  /** Small caps line above the title. */
+  eyebrow?: string;
   children: ReactNode;
 }
 
 /**
- * Shared shell for the legal pages (imprint, terms, privacy): eyebrow, title,
- * revision date, prose sections. Legal routes are reached from the footer —
- * i.e. with the page scrolled to the bottom — so the article resets the
- * scroll position on mount.
+ * Shared shell for the footer-reached article pages (imprint, terms, privacy,
+ * developer docs): eyebrow, title, revision date, prose sections. Those routes
+ * are reached from the footer — i.e. with the page scrolled to the bottom — so
+ * the article resets the scroll position on mount.
  */
-export function LegalArticle({ title, updated, children }: LegalArticleProps) {
+export function LegalArticle({
+  title,
+  updated,
+  eyebrow = "SAFENET · LEGAL",
+  children,
+}: LegalArticleProps) {
   // Block body on purpose: a concise arrow would return scrollTo's result,
   // and patched environments (e.g. smooth-scroll extensions) make that a
   // Promise — which React would treat as a broken clean-up function.
@@ -24,7 +31,7 @@ export function LegalArticle({ title, updated, children }: LegalArticleProps) {
   return (
     <article className="w-full max-w-[720px]">
       <span className="font-mono text-xs tracking-[0.22em] text-[var(--page-accent)]">
-        SAFENET · LEGAL
+        {eyebrow}
       </span>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-2 font-mono text-xs text-[var(--page-muted)]">Last updated: {updated}</p>

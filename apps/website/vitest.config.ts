@@ -18,7 +18,7 @@ export default defineConfig({
       exclude: ["src/test/**", "src/main.tsx", "src/vite-env.d.ts"],
       // Floors, not targets: they sit at what the suite covers today so a drop
       // fails CI. Raise them when coverage improves; never lower them silently.
-      thresholds: { statements: 84, branches: 76, functions: 83, lines: 87 },
+      thresholds: { statements: 85, branches: 76, functions: 83, lines: 87 },
     },
   },
 });
