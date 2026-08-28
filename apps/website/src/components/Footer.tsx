@@ -6,7 +6,8 @@ const FOOTER_LINKS = [
   // environment (staging included) so users can always reach the real thing.
   { label: "safenetstake.eth", href: "https://safenetstake.eth.limo/" },
   { label: "Safenet Explorer", href: "https://explorer.safenet-beta.eth.limo/" },
-  { label: "FAQ", href: "https://docs.safefoundation.org/safenet/resources/faq" },
+  // "Safenet FAQ", not "FAQ" — the plain "FAQ" below is this site's own page.
+  { label: "Safenet FAQ", href: "https://docs.safefoundation.org/safenet/resources/faq" },
   { label: "Docs", href: "https://docs.safefoundation.org/safenet/overview/introduction" },
   { label: "Staking Risks", href: "https://docs.safefoundation.org/safenet/staking/risk" },
 ] as const;
@@ -16,6 +17,7 @@ const FOOTER_LINKS = [
  *  documentation, this one is the integration guide for our own packages. */
 const INTERNAL_LINKS = [
   { label: "Developers", to: "/docs" },
+  { label: "FAQ", to: "/faq" },
   { label: "Imprint", to: "/imprint" },
   { label: "Terms", to: "/terms" },
   { label: "Privacy", to: "/privacy" },
@@ -31,8 +33,9 @@ const internalLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 /**
  * Page footer: external Safenet resources (explorer, FAQ, docs) plus this
- * site's own pages — the developer documentation and the operator's legal
- * pages. Mirrors the header's border/tone so the shell reads as one frame.
+ * site's own pages — the developer documentation, the FAQ and the operator's
+ * legal pages. Mirrors the header's border/tone so the shell reads as one
+ * frame.
  */
 export function Footer() {
   return (
