@@ -31,7 +31,8 @@ Styles load automatically: the widget's JS imports its compiled stylesheet, and 
 that processes CSS imports (Vite, Next.js, …) includes it. If your toolchain doesn't, import
 it explicitly once: `import "@chainza/safenet-staking-widget/styles.css";`. All styles are
 scoped (Tailwind utilities prefixed `ss:`, design tokens under the `.safe-stake` class) so
-they can't collide with your app's CSS.
+they can't collide with your app's CSS — including the reset: the widget emits no global
+preflight, so your page's own element styles are never touched.
 
 ### Fonts
 

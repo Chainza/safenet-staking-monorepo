@@ -6,7 +6,13 @@
    by theme.css's font tokens with system fallbacks; hosts that want the exact
    look self-host those families (see the README), as the reference website
    does. */
-@import "tailwindcss" prefix(ss);
+/* Tailwind is imported in parts so its *global* preflight is skipped — a
+   library stylesheet must not reset the host page's elements (`*`, `html`,
+   `body`, …). The subset of preflight the widget's own markup relies on is
+   re-declared scoped under `.safe-stake` in theme.css's base layer. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(ss);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(ss);
 
 /* Scan the widget source explicitly (relative to this file) rather than relying
    on Tailwind's cwd-based auto-detection. This keeps the `ss:` utilities correct

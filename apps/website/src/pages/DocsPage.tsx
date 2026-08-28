@@ -94,7 +94,8 @@ export function App() {
           once. Every style is scoped (Tailwind utilities prefixed{" "}
           <code className="font-mono text-xs">ss:</code>, tokens under{" "}
           <code className="font-mono text-xs">.safe-stake</code>), so nothing collides with your own
-          CSS.
+          CSS — including the reset: the widget emits no global preflight, so the host page&rsquo;s
+          element styles are never touched.
         </p>
         <p>
           The widget loads no fonts of its own — no Google Fonts request, no bundled binaries. It
