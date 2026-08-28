@@ -49,6 +49,29 @@ describe("AmountField", () => {
     expect(screen.getByText("123.46")).toBeDefined();
   });
 
+  it("blocks the sign and exponent keys (an amount is a non-negative decimal)", () => {
+    render(<AmountField {...baseProps} onChange={() => {}} />);
+    const input = screen.getByLabelText("Stake amount");
+
+    for (const key of ["-", "+", "e", "E"]) {
+      const prevented = !fireEvent.keyDown(input, { key });
+      expect(prevented, `"${key}" should be prevented`).toBe(true);
+    }
+    expect(!fireEvent.keyDown(input, { key: "5" }), '"5" should pass').toBe(false);
+  });
+
+  it("drops a negative value arriving around the keyboard (paste, drop)", () => {
+    const onChange = vi.fn();
+    render(<AmountField {...baseProps} onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText("Stake amount"), { target: { value: "-5" } });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("floors the input at zero via the native min attribute", () => {
+    render(<AmountField {...baseProps} onChange={() => {}} />);
+    expect(screen.getByLabelText("Stake amount").getAttribute("min")).toBe("0");
+  });
+
   it("disables the input and MAX when disabled", () => {
     render(<AmountField {...baseProps} onChange={() => {}} disabled />);
     expect((screen.getByLabelText("Stake amount") as HTMLInputElement).disabled).toBe(true);

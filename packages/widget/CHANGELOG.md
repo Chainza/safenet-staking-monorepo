@@ -38,6 +38,9 @@ logo as the token icon, which the grant agreement does not license.
   mismatch.
 - **Error boundary around the panels** — a render crash degrades to an inline notice
   instead of unmounting the host app's tree.
+- **Amount inputs reject negative values** — the sign/exponent keys are blocked, values
+  pasted or dropped with a `-` are ignored (`min="0"` floors the native control), and
+  `parseAmount` clamps anything negative to `0n`.
 
 ## [0.1.0] — 2026-08-14
 
