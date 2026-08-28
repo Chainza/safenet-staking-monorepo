@@ -1,0 +1,77 @@
+# Uptime monitoring for the production deployment (M2 requirement): every 30
+# minutes, probe the canonical ENS gateway plus one independent fallback path
+# and assert the app actually serves (HTTP 200 + the built page's <title>).
+# Evidence lives in this workflow's run history; a sustained failure opens an
+# `incident` issue (deduplicated while one is open), which feeds INCIDENTS.md.
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  probe:
+    name: Probe ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      # One gateway going down must not cancel the probe of the other.
+      fail-fast: false
+      matrix:
+        include:
+          - name: primary (safenetstake.eth.limo)
+            url: https://safenetstake.eth.limo/
+          - name: fallback (safenetstake.eth.sucks)
+            url: https://safenetstake.eth.sucks/
+    steps:
+      - name: Probe with retries
+        run: |
+          # Three attempts 30s apart so a transient gateway blip doesn't page;
+          # only a failure sustained across all three marks the run red.
+          for attempt in 1 2 3; do
+            if curl -sS --max-time 30 "$URL" | grep -q "<title>SAFE Staking</title>"; then
+              echo "OK: $URL serves the app (attempt $attempt)"
+              exit 0
+            fi
+            echo "attempt $attempt failed for $URL"
+            [ "$attempt" -lt 3 ] && sleep 30
+          done
+          echo "DOWN: $URL failed all 3 attempts"
+          exit 1
+        env:
+          URL: ${{ matrix.url }}
+
+  report:
+    name: Open incident issue
+    needs: probe
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: File (or skip if one is already open)
+        run: |
+          gh label create incident --repo "$REPO" \
+            --description "Production availability incident" --color B60205 || true
+          open_count=$(gh issue list --repo "$REPO" --label incident --state open \
+            --json number --jq length)
+          if [ "$open_count" -gt 0 ]; then
+            echo "An incident issue is already open; not filing a duplicate."
+            exit 0
+          fi
+          gh issue create --repo "$REPO" --label incident \
+            --title "Incident: production gateway probe failing ($(date -u +%Y-%m-%d) UTC)" \
+            --body "$BODY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BODY: |
+            The scheduled uptime probe failed all retries for at least one gateway path.
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Next steps: check https://safenetstake.eth.limo/ and
+            https://safenetstake.eth.sucks/, identify the cause (gateway outage,
+            ENS record, pinning), and once resolved, close this issue and record
+            the incident in INCIDENTS.md.
