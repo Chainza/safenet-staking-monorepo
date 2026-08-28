@@ -4,6 +4,7 @@ import { useConnection, usePublicClient } from "wagmi";
 import type { Address, Hash } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
+import { waitForSuccessfulReceipt } from "../lib/receipt.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { safeBalanceQueryKey } from "./useSafeBalance.js";
 import { safeAllowanceQueryKey } from "./useSafeAllowance.js";
@@ -49,12 +50,12 @@ export function useStake() {
       if (allowance < amount) {
         setStep("approving");
         const approveHash = await client.token.approve(amount);
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await waitForSuccessfulReceipt(publicClient, approveHash);
       }
 
       setStep("staking");
       const hash = await client.staking.stake(validator, amount);
-      await publicClient.waitForTransactionReceipt({ hash });
+      await waitForSuccessfulReceipt(publicClient, hash);
       return hash;
     },
     onError: (err) => logger.error("stake failed:", err),

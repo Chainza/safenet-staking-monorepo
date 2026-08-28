@@ -103,6 +103,28 @@ describe("useStake", () => {
     expect(keys).toContainEqual(["safe-stake", "validator-stakes", 1]);
   });
 
+  it("fails the flow when the stake tx mines but reverts", async () => {
+    getAllowance.mockResolvedValue(1000n);
+    waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
+    const { result } = renderHook(() => useStake(), { wrapper });
+
+    act(() => result.current.mutate({ validator: VALIDATOR, amount: 100n }));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Transaction reverted on-chain (0xstake)");
+    expect(result.current.step).toBe("idle");
+  });
+
+  it("stops before staking when the approve tx mines but reverts", async () => {
+    getAllowance.mockResolvedValue(0n);
+    waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
+    const { result } = renderHook(() => useStake(), { wrapper });
+
+    act(() => result.current.mutate({ validator: VALIDATOR, amount: 100n }));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Transaction reverted on-chain (0xapprove)");
+    expect(stake).not.toHaveBeenCalled();
+  });
+
   it("surfaces a write failure as an error and resets the step to idle", async () => {
     getAllowance.mockResolvedValue(1000n);
     stake.mockRejectedValue(new Error("user rejected"));

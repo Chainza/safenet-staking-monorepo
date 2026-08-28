@@ -60,6 +60,15 @@ describe("useUnstake", () => {
     expect(keys).toContainEqual(["safe-stake", "validator-stakes", 1]);
   });
 
+  it("fails the flow when the tx mines but reverts", async () => {
+    waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
+    const { result } = renderHook(() => useUnstake(), { wrapper });
+
+    act(() => result.current.mutate({ validator: VALIDATOR, amount: 100n }));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Transaction reverted on-chain (0xunstake)");
+  });
+
   it("surfaces a write failure as an error", async () => {
     initiateWithdrawal.mockRejectedValue(new Error("user rejected"));
     const { result } = renderHook(() => useUnstake(), { wrapper });
