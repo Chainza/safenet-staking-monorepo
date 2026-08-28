@@ -46,7 +46,7 @@ describe("App", () => {
 
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
     expect(screen.getByRole("button", { name: /connect wallet/i })).toBeDefined();
-    expect(screen.getByRole("img", { name: "Safe" })).toBeDefined();
+    expect(screen.getByRole("img", { name: "Safenet Staking" })).toBeDefined();
   });
 
   it("shows the nav once connected", async () => {
