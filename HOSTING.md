@@ -165,14 +165,16 @@ side of the one command a human runs.
 ### Cutting a release
 
 1. **Bump** the version in the package's `package.json` and add its `## [x.y.z]` section to
-   the package's `CHANGELOG.md`. Commit and push — releases are cut from a clean `main`.
+   the package's `CHANGELOG.md`. Commit and push — releases are cut from a clean, pushed
+   `main` or `release/*` branch (the tag must point at a public commit).
 2. **Preflight and pack** (`core` or `widget`):
 
    ```sh
    pnpm release core
    ```
 
-   This refuses to continue unless the worktree is clean, `HEAD` is `origin/main`, the
+   This refuses to continue unless the worktree is clean, `HEAD` matches its pushed
+   upstream (`origin/main` or `origin/release/…`), the
    version is absent from npm (registry versions are immutable) and untagged, and the
    CHANGELOG documents it. Then it force-rebuilds the package, runs its tests, packs it into
    `.release/` and asserts the **tarball** is sound: no `workspace:` range survived packing,
