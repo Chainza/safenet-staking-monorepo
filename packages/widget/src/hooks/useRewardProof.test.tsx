@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { Address } from "viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "../lib/http.js";
-import { useRewardProof, rewardProofQueryKey } from "./useRewardProof.js";
+import { useRewardProof, rewardProofQueryKey, parseRewardProof } from "./useRewardProof.js";
 
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
 
@@ -92,7 +92,48 @@ describe("useRewardProof", () => {
     expect(getMock).not.toHaveBeenCalled();
   });
 
+  it("errors on a malformed proof body instead of surfacing it as data", async () => {
+    getMock.mockResolvedValue({ status: 200, data: { ...PROOF, cumulativeAmount: 1000 } });
+    const { result } = renderHook(() => useRewardProof(), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toMatch(/malformed reward proof/i);
+  });
+
   it("exposes an account-scoped query key", () => {
     expect(rewardProofQueryKey(ACCOUNT)).toEqual(["safe-stake", "reward-proof", ACCOUNT]);
+  });
+});
+
+describe("parseRewardProof", () => {
+  const ROOT = `0x${"aa".repeat(32)}`;
+  const PATH = [`0x${"bb".repeat(32)}`];
+  const valid = { cumulativeAmount: "1000", merkleRoot: ROOT, proof: PATH };
+
+  it("accepts a valid proof and drops unknown fields", () => {
+    expect(parseRewardProof({ ...valid, extra: "ignored" })).toEqual(valid);
+  });
+
+  it("accepts a null path and the optional kyc fields", () => {
+    expect(parseRewardProof({ ...valid, proof: null, kycAmount: "5", kyc: false })).toEqual({
+      ...valid,
+      proof: null,
+      kycAmount: "5",
+      kyc: false,
+    });
+  });
+
+  it.each([
+    ["a non-object body", "nope"],
+    ["a null body", null],
+    ["a numeric cumulativeAmount", { ...valid, cumulativeAmount: 1000 }],
+    ["a non-decimal cumulativeAmount", { ...valid, cumulativeAmount: "0x10" }],
+    ["a missing merkleRoot", { ...valid, merkleRoot: undefined }],
+    ["a short merkleRoot", { ...valid, merkleRoot: "0xaabb" }],
+    ["a non-array path", { ...valid, proof: "0xaabb" }],
+    ["a path with a malformed entry", { ...valid, proof: [...PATH, "0x123"] }],
+    ["a non-decimal kycAmount", { ...valid, kycAmount: "many" }],
+    ["a non-boolean kyc", { ...valid, kyc: "yes" }],
+  ])("rejects %s", (_case, body) => {
+    expect(() => parseRewardProof(body)).toThrow(/^Malformed reward proof: /);
   });
 });

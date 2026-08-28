@@ -6,6 +6,7 @@ import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
 import { useIsSanctioned } from "./hooks/useIsSanctioned.js";
 import { SanctionedNotice } from "./components/SanctionedNotice.js";
+import { PanelErrorBoundary } from "./components/PanelErrorBoundary.js";
 import { RisksDisclosure } from "./components/RisksDisclosure.js";
 import { Header } from "./components/Header.js";
 import { Card } from "./components/ui/card.js";
@@ -76,26 +77,28 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
           // the account can still be disconnected/switched.
           <SanctionedNotice />
         ) : (
-          <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-            <TabsList>
-              <TabsTrigger value="stake">stake</TabsTrigger>
-              <TabsTrigger value="unstake">unstake</TabsTrigger>
-              <TabsTrigger value="claim">claim</TabsTrigger>
-              <TabsTrigger value="rewards">rewards</TabsTrigger>
-            </TabsList>
-            <TabsContent value="stake">
-              <StakePanel state={state} symbol={symbol} decimals={decimals} />
-            </TabsContent>
-            <TabsContent value="unstake">
-              <UnstakePanel state={state} symbol={symbol} decimals={decimals} />
-            </TabsContent>
-            <TabsContent value="claim">
-              <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
-            </TabsContent>
-            <TabsContent value="rewards">
-              <RewardsPanel state={state} symbol={symbol} decimals={decimals} />
-            </TabsContent>
-          </Tabs>
+          <PanelErrorBoundary>
+            <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+              <TabsList>
+                <TabsTrigger value="stake">stake</TabsTrigger>
+                <TabsTrigger value="unstake">unstake</TabsTrigger>
+                <TabsTrigger value="claim">claim</TabsTrigger>
+                <TabsTrigger value="rewards">rewards</TabsTrigger>
+              </TabsList>
+              <TabsContent value="stake">
+                <StakePanel state={state} symbol={symbol} decimals={decimals} />
+              </TabsContent>
+              <TabsContent value="unstake">
+                <UnstakePanel state={state} symbol={symbol} decimals={decimals} />
+              </TabsContent>
+              <TabsContent value="claim">
+                <ClaimPanel state={state} symbol={symbol} decimals={decimals} />
+              </TabsContent>
+              <TabsContent value="rewards">
+                <RewardsPanel state={state} symbol={symbol} decimals={decimals} />
+              </TabsContent>
+            </Tabs>
+          </PanelErrorBoundary>
         )}
 
         <RisksDisclosure withdrawDelaySec={data.withdrawDelaySec} />
