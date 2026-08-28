@@ -38,7 +38,7 @@
   --safe-c8: #515a55;
   --safe-c9: #0b1310;
 
-  --safe-accent-strong: #07a24c; /* darker green for legible accent text on light */
+  --safe-accent-strong: #056b33; /* darker green: ≥4.5:1 for accent text on the light surfaces */
 
   --safe-success: #0a9d52;
   --safe-error: #d83a3a;

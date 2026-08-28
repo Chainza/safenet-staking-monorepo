@@ -30,7 +30,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "ss:inline-flex ss:flex-1 ss:items-center ss:justify-center ss:rounded-lg ss:py-2 ss:font-mono ss:text-xs ss:font-medium ss:uppercase ss:tracking-wider ss:text-muted-foreground ss:cursor-pointer ss:outline-none ss:transition-colors ss:focus-visible:ring-2 ss:focus-visible:ring-ring/40 ss:disabled:pointer-events-none ss:disabled:opacity-50 ss:data-[state=active]:bg-secondary ss:data-[state=active]:text-primary",
+        "ss:inline-flex ss:flex-1 ss:items-center ss:justify-center ss:rounded-lg ss:py-2 ss:font-mono ss:text-xs ss:font-medium ss:uppercase ss:tracking-wider ss:text-muted-foreground ss:cursor-pointer ss:outline-none ss:transition-colors ss:focus-visible:ring-2 ss:focus-visible:ring-ring/40 ss:disabled:pointer-events-none ss:disabled:opacity-50 ss:data-[state=active]:bg-secondary ss:data-[state=active]:text-accent-strong",
         className,
       )}
       {...props}
