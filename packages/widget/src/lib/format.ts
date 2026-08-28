@@ -9,10 +9,13 @@ export function formatToken(amount: bigint, decimals = 18, maxFractionDigits = 2
   });
 }
 
-/** Parse a user-entered amount into base units; invalid/empty input → `0n`. */
+/** Parse a user-entered amount into base units; invalid, empty or negative
+ *  input → `0n` (an amount can never be negative — the field blocks the sign,
+ *  and this clamp backstops any path around it). */
 export function parseAmount(value: string, decimals: number): bigint {
   try {
-    return value ? parseUnits(value, decimals) : 0n;
+    const parsed = value ? parseUnits(value, decimals) : 0n;
+    return parsed > 0n ? parsed : 0n;
   } catch {
     return 0n;
   }

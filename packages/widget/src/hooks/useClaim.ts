@@ -3,6 +3,7 @@ import { useConnection, usePublicClient } from "wagmi";
 import type { Hash } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
+import { waitForSuccessfulReceipt } from "../lib/receipt.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { withdrawalsQueryKey } from "./useWithdrawals.js";
 import { safeBalanceQueryKey } from "./useSafeBalance.js";
@@ -31,7 +32,7 @@ export function useClaim() {
       );
 
       const hash = await client.staking.claimWithdrawal();
-      await publicClient.waitForTransactionReceipt({ hash });
+      await waitForSuccessfulReceipt(publicClient, hash);
       return hash;
     },
     onError: (err) => logger.error("claim failed:", err),

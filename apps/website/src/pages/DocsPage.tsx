@@ -94,7 +94,14 @@ export function App() {
           once. Every style is scoped (Tailwind utilities prefixed{" "}
           <code className="font-mono text-xs">ss:</code>, tokens under{" "}
           <code className="font-mono text-xs">.safe-stake</code>), so nothing collides with your own
-          CSS.
+          CSS — including the reset: the widget emits no global preflight, so the host page&rsquo;s
+          element styles are never touched.
+        </p>
+        <p>
+          The widget loads no fonts of its own — no Google Fonts request, no bundled binaries. It
+          renders in Bricolage Grotesque and IBM Plex Mono when the host page provides those
+          families (weights 400–700 and 400/500/600 respectively) and falls back to the system
+          stacks otherwise; this site self-hosts them.
         </p>
         <p>
           There are no chain or contract-address props: the deployment follows the wallet's active

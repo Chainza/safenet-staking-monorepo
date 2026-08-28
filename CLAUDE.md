@@ -401,6 +401,14 @@ Today core sits at ~70% with everything at 100% except `client.ts` (the bound
   **`github.deploymentEnabled: false`** — Vercel names a production-branch deploy `Production`
   and that name can't be overridden, so leaving it on advertises a "Production" environment on
   the repo page that points at _staging_. Production is IPFS + ENS; don't re-enable it.
+- **Production uptime is monitored from CI and incidents are public.** The `Uptime`
+  workflow (`.github/workflows/uptime.yml`) probes the canonical ENS gateway
+  (`safenetstake.eth.limo`) plus one independent fallback (`safenetstake.eth.sucks`) every
+  30 minutes, asserting the built page's `<title>`; a sustained failure auto-opens a GitHub
+  issue labeled `incident` (deduplicated while one is open). Closed incidents get a summary
+  row in `INCIDENTS.md` (the public incident log — a grant M2 requirement, so the run
+  history is evidence: don't rename/disable the workflow casually, and keep the log's
+  format when recording an incident).
 - **npm publishing is manual on purpose — CI holds no registry credentials.** `pnpm release
 <core|widget>` (`scripts/release-package.mjs`) runs the preflight and packs the tarball, the
   maintainer runs `npm publish <tarball> --otp …` by hand, then `pnpm release <pkg> --record`

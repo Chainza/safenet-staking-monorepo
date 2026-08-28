@@ -31,7 +31,17 @@ Styles load automatically: the widget's JS imports its compiled stylesheet, and 
 that processes CSS imports (Vite, Next.js, …) includes it. If your toolchain doesn't, import
 it explicitly once: `import "@chainza/safenet-staking-widget/styles.css";`. All styles are
 scoped (Tailwind utilities prefixed `ss:`, design tokens under the `.safe-stake` class) so
-they can't collide with your app's CSS.
+they can't collide with your app's CSS — including the reset: the widget emits no global
+preflight, so your page's own element styles are never touched.
+
+### Fonts
+
+The widget loads no fonts of its own — no Google Fonts request, no bundled font binaries. It
+renders in **Bricolage Grotesque** (display) and **IBM Plex Mono** (figures, labels,
+addresses) when the host page provides those families, and falls back to the system UI and
+monospace stacks otherwise. To get the intended look, self-host the two families and declare
+them with `@font-face` (weights: Bricolage Grotesque 400–700, IBM Plex Mono 400/500/600), or
+serve them however your app already serves fonts.
 
 ## Props
 

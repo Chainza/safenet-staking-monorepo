@@ -24,7 +24,8 @@ export interface RewardsData {
   totalClaimed: bigint;
   /** The on-chain root rotated past the fetched proof — a claim would revert. */
   rootStale: boolean;
-  /** Ready to submit: something to claim, a usable proof, and a fresh root. */
+  /** Ready to submit: something to claim, a usable proof, and a *confirmed*
+   *  matching on-chain root — a pending or failed root read blocks. */
   canClaim: boolean;
 }
 
@@ -71,11 +72,14 @@ export function useRewards(): RewardsData {
   const cumulative = BigInt(proof.cumulativeAmount);
   const claimable = cumulative > claimed ? cumulative - claimed : ZERO;
   const rootStale = onChainRoot !== undefined && onChainRoot !== proof.merkleRoot;
+  // Fail-closed: only a *read* root that matches the proof enables the claim —
+  // while the root read is pending or errored the tx could revert, so block.
+  const rootConfirmed = onChainRoot !== undefined && onChainRoot === proof.merkleRoot;
 
   return {
     claimable,
     totalClaimed: claimed,
     rootStale,
-    canClaim: claimable > ZERO && !rootStale && proof.proof !== null,
+    canClaim: claimable > ZERO && rootConfirmed && proof.proof !== null,
   };
 }

@@ -3,6 +3,7 @@ import { useConnection, usePublicClient } from "wagmi";
 import type { Address, Hash } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
+import { waitForSuccessfulReceipt } from "../lib/receipt.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { withdrawalsQueryKey } from "./useWithdrawals.js";
 
@@ -37,7 +38,7 @@ export function useUnstake() {
       );
 
       const hash = await client.staking.initiateWithdrawal(validator, amount);
-      await publicClient.waitForTransactionReceipt({ hash });
+      await waitForSuccessfulReceipt(publicClient, hash);
       return hash;
     },
     onError: (err) => logger.error("unstake failed:", err),

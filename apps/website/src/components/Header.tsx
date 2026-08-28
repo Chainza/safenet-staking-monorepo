@@ -4,7 +4,7 @@ import { Link, NavLink } from "react-router";
 import { useConnection } from "wagmi";
 import type { Theme } from "../theme.js";
 import { WalletControl } from "../WalletControl.js";
-import { SafeLogo } from "./SafeLogo.js";
+import { BrandLogo } from "./BrandLogo.js";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-full px-4 py-2 text-sm font-medium transition-colors ${
@@ -47,7 +47,7 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
   return (
     <header className="relative flex items-center justify-between border-b border-[var(--page-border)] px-4 py-4">
       <Link to="/" aria-label="Home" className="rounded-full">
-        <SafeLogo className="size-10" />
+        <BrandLogo className="size-10" />
       </Link>
 
       {/* ≥ xs: centered nav (on the viewport, not between the flex siblings). */}

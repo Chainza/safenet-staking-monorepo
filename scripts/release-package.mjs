@@ -154,14 +154,20 @@ assert(
   "working tree is dirty — commit or stash first",
 );
 
+// Releases are cut from `main` or a `release/*` branch. What actually matters
+// for the version→commit mapping is that the tag points at a *public* commit,
+// hence the pushed-HEAD check below against whichever of the two is checked out.
 const branch = run("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
-assert(branch === "main", `on branch "${branch}" — releases are cut from main`);
+assert(
+  branch === "main" || branch.startsWith("release/"),
+  `on branch "${branch}" — releases are cut from main or a release/* branch`,
+);
 
 try {
-  run("git", ["fetch", "--quiet", "origin", "main"]);
+  run("git", ["fetch", "--quiet", "origin", branch]);
   assert(
-    run("git", ["rev-parse", "HEAD"]) === run("git", ["rev-parse", "origin/main"]),
-    "HEAD is not origin/main — push or pull first, so the tag points at a public commit",
+    run("git", ["rev-parse", "HEAD"]) === run("git", ["rev-parse", `origin/${branch}`]),
+    `HEAD is not origin/${branch} — push or pull first, so the tag points at a public commit`,
   );
 } catch (error) {
   if (error instanceof assert.AssertionError) throw error;

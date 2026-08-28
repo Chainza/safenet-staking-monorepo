@@ -58,6 +58,15 @@ describe("useClaim", () => {
     expect(keys).toContainEqual(["safe-stake", "balance", 1, ACCOUNT]);
   });
 
+  it("fails the flow when the tx mines but reverts", async () => {
+    waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
+    const { result } = renderHook(() => useClaim(), { wrapper });
+
+    act(() => result.current.mutate());
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Transaction reverted on-chain (0xclaim)");
+  });
+
   it("surfaces a write failure as an error", async () => {
     claimWithdrawal.mockRejectedValue(new Error("user rejected"));
     const { result } = renderHook(() => useClaim(), { wrapper });

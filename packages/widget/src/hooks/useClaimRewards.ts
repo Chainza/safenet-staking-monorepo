@@ -3,6 +3,7 @@ import { useConnection, usePublicClient } from "wagmi";
 import type { Hash } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
+import { waitForSuccessfulReceipt } from "../lib/receipt.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useRewardProof, rewardProofQueryKey } from "./useRewardProof.js";
 import { cumulativeClaimedQueryKey } from "./useRewards.js";
@@ -40,7 +41,7 @@ export function useClaimRewards() {
         proof.merkleRoot,
         proof.proof,
       );
-      await publicClient.waitForTransactionReceipt({ hash });
+      await waitForSuccessfulReceipt(publicClient, hash);
       return hash;
     },
     onError: (err) => logger.error("claim rewards failed:", err),

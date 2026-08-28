@@ -53,6 +53,11 @@ describe("parseAmount", () => {
   it("returns 0n for malformed input instead of throwing", () => {
     expect(parseAmount("not-a-number", 18)).toBe(0n);
   });
+
+  it("clamps negative input to 0n (amounts are non-negative)", () => {
+    expect(parseAmount("-12.5", 18)).toBe(0n);
+    expect(parseAmount("-0.000001", 6)).toBe(0n);
+  });
 });
 
 describe("dayCount", () => {

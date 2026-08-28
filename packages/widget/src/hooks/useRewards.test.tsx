@@ -42,10 +42,11 @@ describe("useRewards", () => {
 
   it("derives claimable as the proof's cumulative amount minus the claimed counter", async () => {
     const { result } = renderHook(() => useRewards(), { wrapper });
-    await waitFor(() => expect(result.current.claimable).toBe(600n));
+    // canClaim needs the root read confirmed too, so it's the last flag to flip.
+    await waitFor(() => expect(result.current.canClaim).toBe(true));
+    expect(result.current.claimable).toBe(600n);
     expect(result.current.totalClaimed).toBe(400n);
     expect(result.current.rootStale).toBe(false);
-    expect(result.current.canClaim).toBe(true);
   });
 
   it("reports nothing to claim once everything is claimed", async () => {
@@ -61,6 +62,22 @@ describe("useRewards", () => {
     const { result } = renderHook(() => useRewards(), { wrapper });
     await waitFor(() => expect(result.current.rootStale).toBe(true));
     expect(result.current.claimable).toBe(600n);
+    expect(result.current.canClaim).toBe(false);
+  });
+
+  it("blocks claiming while the root read is still pending", async () => {
+    getMerkleRoot.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useRewards(), { wrapper });
+    await waitFor(() => expect(result.current.claimable).toBe(600n));
+    expect(result.current.rootStale).toBe(false);
+    expect(result.current.canClaim).toBe(false);
+  });
+
+  it("blocks claiming when the root read fails", async () => {
+    getMerkleRoot.mockRejectedValue(new Error("rpc down"));
+    const { result } = renderHook(() => useRewards(), { wrapper });
+    await waitFor(() => expect(result.current.claimable).toBe(600n));
+    expect(result.current.rootStale).toBe(false);
     expect(result.current.canClaim).toBe(false);
   });
 

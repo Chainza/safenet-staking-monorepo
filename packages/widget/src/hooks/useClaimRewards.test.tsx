@@ -78,6 +78,15 @@ describe("useClaimRewards", () => {
     expect(claim).not.toHaveBeenCalled();
   });
 
+  it("fails the flow when the tx mines but reverts", async () => {
+    waitForTransactionReceipt.mockResolvedValue({ status: "reverted" });
+    const { result } = renderHook(() => useClaimRewards(), { wrapper });
+
+    act(() => result.current.mutate());
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("Transaction reverted on-chain (0xrewards)");
+  });
+
   it("surfaces a write failure as an error", async () => {
     claim.mockRejectedValue(new Error("user rejected"));
     const { result } = renderHook(() => useClaimRewards(), { wrapper });

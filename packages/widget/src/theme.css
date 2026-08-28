@@ -38,7 +38,7 @@
   --safe-c8: #515a55;
   --safe-c9: #0b1310;
 
-  --safe-accent-strong: #07a24c; /* darker green for legible accent text on light */
+  --safe-accent-strong: #056b33; /* darker green: ≥4.5:1 for accent text on the light surfaces */
 
   --safe-success: #0a9d52;
   --safe-error: #d83a3a;
@@ -106,6 +106,54 @@
 }
 
 @layer base {
+  /* Scoped preflight — the subset of Tailwind's (which styles.css deliberately
+     does NOT import globally; see the note there) that the widget's own markup
+     relies on, mirrored from tailwindcss/preflight.css and limited to the
+     elements the widget renders (div/span/button/input/p/a/b/svg). Everything
+     targets `.safe-stake` so the host page's styles are never touched. */
+  .safe-stake {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .safe-stake *,
+  .safe-stake ::before,
+  .safe-stake ::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  .safe-stake a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  .safe-stake b {
+    font-weight: bolder;
+  }
+  .safe-stake img,
+  .safe-stake svg {
+    display: block;
+    vertical-align: middle;
+  }
+  .safe-stake button,
+  .safe-stake input,
+  .safe-stake select,
+  .safe-stake textarea {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  .safe-stake ::placeholder {
+    opacity: 1;
+  }
+
   /* Strip native number-input spinners — no utility covers these pseudo-els. */
   .safe-stake input[type="number"]::-webkit-outer-spin-button,
   .safe-stake input[type="number"]::-webkit-inner-spin-button {

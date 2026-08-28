@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import { formatUnits } from "viem";
 import { formatToken } from "../lib/format.js";
 import { Card } from "./ui/card.js";
@@ -35,6 +36,13 @@ export function AmountField({
   // and trip the "Insufficient balance" guard.
   const setMax = () => onChange(formatUnits(available, decimals));
 
+  // An amount is a non-negative decimal, so the sign and exponent characters a
+  // number input otherwise accepts can never form a valid value here — block
+  // them at the keystroke.
+  const blockNonAmountKeys = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+  };
+
   return (
     <Card
       data-disabled={disabled ? "true" : "false"}
@@ -53,11 +61,17 @@ export function AmountField({
           className="ss:font-mono ss:text-3xl ss:font-medium ss:tracking-tight"
           inputMode="decimal"
           type="number"
+          min={0}
           placeholder="0.00"
           aria-label={label}
           value={value}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={blockNonAmountKeys}
+          // The keystroke guard can't cover paste/drop/autofill, so negative
+          // values are dropped here too — 0 is the smallest allowed amount.
+          onChange={(e) => {
+            if (!e.target.value.includes("-")) onChange(e.target.value);
+          }}
         />
         <Button
           variant="outline"

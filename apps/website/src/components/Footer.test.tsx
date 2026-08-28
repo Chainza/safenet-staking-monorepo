@@ -6,13 +6,14 @@ import { Footer } from "./Footer.js";
 const externalLinks = [
   { name: /safenetstake\.eth/i, href: "https://safenetstake.eth.limo/" },
   { name: /safenet explorer/i, href: "https://explorer.safenet-beta.eth.limo/" },
-  { name: /faq/i, href: "https://docs.safefoundation.org/safenet/resources/faq" },
+  { name: /safenet faq/i, href: "https://docs.safefoundation.org/safenet/resources/faq" },
   { name: /^docs$/i, href: "https://docs.safefoundation.org/safenet/overview/introduction" },
   { name: /staking risks/i, href: "https://docs.safefoundation.org/safenet/staking/risk" },
 ];
 
 const internalLinks = [
   { name: /developers/i, href: "/docs" },
+  { name: /^faq$/i, href: "/faq" },
   { name: /imprint/i, href: "/imprint" },
   { name: /terms/i, href: "/terms" },
   { name: /privacy/i, href: "/privacy" },
@@ -44,10 +45,10 @@ describe("Footer", () => {
     expect(link.getAttribute("target")).toBeNull();
   });
 
-  it("renders exactly the nine links", () => {
+  it("renders exactly the ten links", () => {
     renderFooter();
 
-    expect(screen.getAllByRole("link")).toHaveLength(9);
+    expect(screen.getAllByRole("link")).toHaveLength(10);
   });
 
   it("marks only the currently open internal page's link as current", () => {

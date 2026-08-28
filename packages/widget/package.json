@@ -1,6 +1,6 @@
 {
   "name": "@chainza/safenet-staking-widget",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Drop-in React widget for SAFE staking, built on @chainza/safenet-staking-core.",
   "license": "MIT",
   "keywords": [

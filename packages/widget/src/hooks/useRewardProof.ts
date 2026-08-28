@@ -24,6 +24,58 @@ export interface RewardProof {
   kyc?: boolean;
 }
 
+const HEX_32_BYTES = /^0x[0-9a-fA-F]{64}$/;
+const DECIMAL_DIGITS = /^\d+$/;
+
+/**
+ * Validate the registry's proof JSON at the trust boundary. The file is
+ * external input feeding straight into `BigInt(...)` and an on-chain claim, so
+ * a malformed field must fail the query (a rendered error) rather than throw
+ * mid-render or send a doomed tx. Throws on the first offending field.
+ */
+export function parseRewardProof(data: unknown): RewardProof {
+  if (typeof data !== "object" || data === null) {
+    throw new Error("Malformed reward proof: not an object");
+  }
+  const {
+    cumulativeAmount,
+    merkleRoot,
+    proof: path,
+    kycAmount,
+    kyc,
+  } = data as Record<string, unknown>;
+
+  if (typeof cumulativeAmount !== "string" || !DECIMAL_DIGITS.test(cumulativeAmount)) {
+    throw new Error("Malformed reward proof: cumulativeAmount is not a decimal string");
+  }
+  if (typeof merkleRoot !== "string" || !HEX_32_BYTES.test(merkleRoot)) {
+    throw new Error("Malformed reward proof: merkleRoot is not a 32-byte hex string");
+  }
+  if (
+    path !== null &&
+    (!Array.isArray(path) || !path.every((h) => typeof h === "string" && HEX_32_BYTES.test(h)))
+  ) {
+    throw new Error("Malformed reward proof: proof is not null or an array of 32-byte hex strings");
+  }
+  if (
+    kycAmount !== undefined &&
+    (typeof kycAmount !== "string" || !DECIMAL_DIGITS.test(kycAmount))
+  ) {
+    throw new Error("Malformed reward proof: kycAmount is not a decimal string");
+  }
+  if (kyc !== undefined && typeof kyc !== "boolean") {
+    throw new Error("Malformed reward proof: kyc is not a boolean");
+  }
+
+  return {
+    cumulativeAmount,
+    merkleRoot: merkleRoot as Hex,
+    proof: path as Hex[] | null,
+    ...(kycAmount !== undefined && { kycAmount }),
+    ...(kyc !== undefined && { kyc }),
+  };
+}
+
 const REWARDS_BASE_URL =
   "https://raw.githubusercontent.com/safe-fndn/safenet-beta-data/main/assets/rewards";
 
@@ -61,10 +113,10 @@ export function useRewardProof() {
       // A 404 is an expected answer ("never accrued rewards"), so it's widened
       // into the success range; every other non-2xx throws, as axios does by
       // default, and surfaces as a query error.
-      const { status, data } = await http.get<RewardProof>(proofUrl(address), {
+      const { status, data } = await http.get<unknown>(proofUrl(address), {
         validateStatus: (s) => s === 404 || (s >= 200 && s < 300),
       });
-      return status === 404 ? null : data;
+      return status === 404 ? null : parseRewardProof(data);
     },
   });
 }
