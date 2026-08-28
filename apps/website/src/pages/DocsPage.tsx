@@ -97,6 +97,12 @@ export function App() {
           CSS.
         </p>
         <p>
+          The widget loads no fonts of its own — no Google Fonts request, no bundled binaries. It
+          renders in Bricolage Grotesque and IBM Plex Mono when the host page provides those
+          families (weights 400–700 and 400/500/600 respectively) and falls back to the system
+          stacks otherwise; this site self-hosts them.
+        </p>
+        <p>
           There are no chain or contract-address props: the deployment follows the wallet's active
           chain, and queries disable themselves on a chain with no known deployment.
         </p>

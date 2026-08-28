@@ -1,7 +1,11 @@
-/* Font faces must precede all other rules. Distinctive pairing: Bricolage
-   Grotesque (display/body) + IBM Plex Mono (figures, labels, addresses). */
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
-
+/* The widget deliberately loads no fonts of its own — a library stylesheet
+   must neither phone home (a Google Fonts request would put every consumer's
+   users in front of a third party) nor ship binary font assets whose URLs
+   break under bundlers. The intended pairing — Bricolage Grotesque
+   (display/body) + IBM Plex Mono (figures, labels, addresses) — is referenced
+   by theme.css's font tokens with system fallbacks; hosts that want the exact
+   look self-host those families (see the README), as the reference website
+   does. */
 @import "tailwindcss" prefix(ss);
 
 /* Scan the widget source explicitly (relative to this file) rather than relying
