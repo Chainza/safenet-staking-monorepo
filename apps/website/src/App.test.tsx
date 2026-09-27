@@ -17,6 +17,12 @@ vi.mock("./hooks/useStakerTransactions.js", () => ({
   useStakerTransactions: () => ({ data: undefined, isPending: true, isError: false }),
 }));
 
+// Stub the header's position read (live RPC); the hook and badges have their
+// own tests — under test here is only where the badges render.
+vi.mock("./hooks/useStakePosition.js", () => ({
+  useStakePosition: () => ({ data: { staked: 8_200n * 10n ** 18n, unstaking: 0n, claimable: 0n } }),
+}));
+
 function renderApp({ connected = false, initialPath = "/" } = {}) {
   return render(
     <WagmiHarness config={mainnetConfig(connected)}>
@@ -47,6 +53,7 @@ describe("App", () => {
     expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
     expect(screen.getByRole("button", { name: /connect wallet/i })).toBeDefined();
     expect(screen.getByRole("img", { name: "Safenet Staking" })).toBeDefined();
+    expect(screen.queryByRole("list", { name: "Your staking position" })).toBeNull();
   });
 
   it("shows the nav once connected", async () => {
@@ -55,6 +62,13 @@ describe("App", () => {
     expect(await screen.findByRole("navigation", { name: "Primary" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Stake" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Activity" })).toBeDefined();
+  });
+
+  it("shows the account's position beside the wallet control once connected", async () => {
+    renderApp({ connected: true });
+
+    const position = await screen.findByRole("list", { name: "Your staking position" });
+    expect(position.textContent).toContain("8.2Kstaked");
   });
 
   it("returns to the Stake page via the header logo", async () => {
