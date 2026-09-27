@@ -5,6 +5,40 @@ All notable changes to `@chainza/safenet-staking-widget` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the package
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-09-27
+
+Safe support: writes from a Safe account now settle instead of hanging on a
+`safeTxHash` no RPC can resolve.
+
+### Added
+
+- **"Queued in your Safe" notice** — every panel shows a notice after a write is
+  proposed to a Safe (confirm and execute it in Safe{Wallet}); the claim and rewards
+  buttons show "Queued in Safe" and stay disabled so the same claim can't be proposed
+  twice.
+
+### Fixed
+
+- **Writes from a Safe account hung and then failed** — when the widget runs as a Safe
+  App, or a Safe is connected from Safe{Wallet} over WalletConnect, `eth_sendTransaction`
+  returns a `safeTxHash`, and the flows used to wait for its receipt until viem's 180s
+  timeout, then report failure for a tx that was queued or already executed. Writes
+  from a Safe account are now sent as one EIP-5792 `wallet_sendCalls` batch (so stake's
+  approve + stake is a single Safe tx). A multisig ends as _proposed_ right away; a
+  1-of-1 waits for execution and then refreshes the balances like a regular wallet. A
+  tx that was queued is never reported as failed.
+- **Safe detection is by account, not connector** — a Safe connected over WalletConnect
+  is recognized (the account has code and a non-zero `getThreshold()`), and a failing
+  check aborts before anything is sent rather than guessing.
+- **Stale outcomes across accounts** — a write's result (a queued-Safe notice, a failure
+  alert) is cleared when the connected account or chain changes, so it never shows for
+  the next account.
+
+### Known gap
+
+- A multisig proposal isn't polled after it's queued: once the other owners execute it,
+  the displayed balances stay stale until the page reloads.
+
 ## [0.2.0] — 2026-08-28
 
 Milestone-review fixes. `0.1.0` is deprecated on npm: it shipped the official Safe
