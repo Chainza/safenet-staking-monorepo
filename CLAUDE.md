@@ -108,8 +108,22 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
     left is the oracle screen. The call gate is **fail-closed** (nothing fetches until the
     screen confirms the wallet clean); only the notice itself waits for a confirmed flag.
     Remaining follow-up (see TODO.md): country-level (geo-IP) screening.
+  - **Header position badges** — while connected, `PositionBadges` (one pill left of the
+    wallet control from `min-[1400px]`, at the top of the burger menu below `xs`; hidden in
+    between, where a full three-segment pill runs into the centered nav) shows compact SAFE
+    segments: total **staked** across validators (always, so zero reads as "nothing staked")
+    plus **unstaking** / **claimable** withdrawals while non-zero. Hover/focus opens a
+    CSS-only hint tooltip (`group-hover`/`group-focus-within`, wired via `aria-describedby`)
+    listing all three states with exact amounts and a one-line explanation each.
+    Data comes from `hooks/useStakePosition.ts`, which calls core directly (the widget exports
+    no hooks, and the widget itself is left untouched). It **screens fail-closed like the
+    widget**: `sanctions.isSanctioned` runs first and the position reads only follow a clean
+    result (sanctioned → `null`, failed screen → error; both render nothing). The widget's
+    writes invalidate only their own query keys, so the hook re-reads on a 20s
+    `refetchInterval` instead.
 
-Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
+Dependency direction is enforced by `workspace:*` links: widget → core, website → widget
+(+ website → core, for the header's own reads — see **Header position badges** above).
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
 widget must be built before the app resolves it — `turbo build` handles ordering.
 
@@ -142,7 +156,8 @@ widget's own `build:css` _and_ the website resolving it to source.
   layout-effect sync, and read by selector (`useWidgetStore(s => s.resolvedMode)`) — no
   per-value contexts, no prop-drilling. `Widget` splits into a thin outer `Widget` (mounts
   providers) + `WidgetInner` (calls wagmi hooks, always inside them).
-- **Shared UI state lives in the store** (`resolvedMode`, active `tab`, `selectedValidator`) —
+- **Shared UI state lives in the store** (`resolvedMode`, active `tab`, `selectedValidator`, the
+  pending `safeProposals` — see `useTxSender`) —
   read by selector, never drilled. **Transient, component-local state stays in `useState`**
   (form `amount` inputs, the connector-picker `open` flag): globalizing those would share them
   across instances and across panels. Because the store is module-global, tests must reset it
@@ -179,7 +194,12 @@ widget's own `build:css` _and_ the website resolving it to source.
   `src/wagmi.ts`. Like WalletConnect, `@wagmi/connectors` lazy-imports the Safe SDK and does not
   bundle it, so **`@safe-global/safe-apps-sdk` + `@safe-global/safe-apps-provider`** are the
   widget's _optional_ peers (ranges matching `@wagmi/connectors`'s own) and the website's
-  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's.
+  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's. **When the account
+  is a Safe a write's "hash" is often a `safeTxHash`** (the Safe provider returns it from
+  `eth_sendTransaction`), which no RPC knows — so write flows must never wait for its receipt.
+  That holds for this connector _and_ for a Safe connected from Safe{Wallet} over WalletConnect
+  (Safe{Wallet} serves both through the same `SafeWalletProvider`); see `useTxSender` under
+  **On-chain data hooks**.
 - **Connect UI — `src/components/WalletControl.tsx`** is built directly on wagmi hooks —
   **no ConnectKit or extra wallet UI lib**. Mind the **wagmi v3 deprecations**: use `useConnection`
   (not `useAccount`), and the mutation hooks' `mutate` (not the deprecated `connect`/`disconnect`
@@ -227,11 +247,17 @@ widget's own `build:css` _and_ the website resolving it to source.
   `withdrawDelay` needs no account (a contract-wide param) so it reads even while disconnected;
   `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
   inferred tuple-array return.
-- **Writes are mutation hooks, one per flow.** A write flow is a `useMutation` hook
-  (`useSomeAction`) colocated with its reads, calling the bound `client.*` writes and waiting for
-  each tx with wagmi's `usePublicClient().waitForTransactionReceipt`; on success it
-  `queryClient.invalidateQueries` the reads the tx moves (use the exported key builders, or a
-  partial-key prefix to sweep every validator/account variant). **Stake — `hooks/useStake.ts`.**
+- **Writes are mutation hooks, one per flow.** A write flow is a mutation hook
+  (`useSomeAction`) colocated with its reads, built on **`useConnectionScopedMutation`** (a
+  `useMutation` that resets when the account or chain changes, so a previous account's
+  outcome — a queued Safe tx, a failure alert — never leaks into the next; never use bare
+  `useMutation` for a write). It sends and settles through **`useTxSender`**
+  (below) and resolves to a `TxOutcome`; once it's `confirmed` it calls
+  **`invalidateFlowReads(queryClient, flow, chainId, account)`** (`hooks/invalidateFlowReads.ts`)
+  — the **one list per flow** of reads its tx moves (exported key builders, or a partial-key
+  prefix to sweep every validator/account variant), shared with the Safe proposal watcher;
+  add a new flow's reads there, never inline. A `proposed` outcome moved nothing yet, so it
+  invalidates nothing — the watcher does once the Safe executes. **Stake — `hooks/useStake.ts`.**
   SAFE's `stake(validator, amount)` takes **no permit signature**, so a short allowance forces a
   separate `approve` tx first; the flow re-reads `token.getAllowance` at submit time (the cached
   `useSafeAllowance` read may be stale) and sends `approve` → waits → `stake` → waits, exposing a
@@ -245,7 +271,42 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   `StakePanel`/`UnstakePanel` share `parseAmount` (in `lib/format.ts`, the parse counterpart to
   `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
-  `error`.
+  `error`. Every panel renders `SafeProposedNotice` with `useSafeProposal(flow)` — its flow's
+  proposal from the store, so it survives the tab unmounting (pending → "Queued in your Safe";
+  failed → a failure alert); `ClaimPanel`/`RewardsPanel` also block a duplicate proposal with a
+  disabled "Queued in Safe" branch while one is pending, since a second claim of the same entry
+  would fail on execution.
+- **Sending + settling a tx — `hooks/useTxSender.ts`** is the one seam every write flow goes
+  through; flows never call `waitForTransactionReceipt` or `sendCalls` themselves. It returns
+  `{ isSafeAccount, batchForSafe, confirmOnChain }` and the `TxOutcome` union (`confirmed` with
+  the on-chain `hash`, or `proposed` with the `safeTxHash`). Regular wallets send through core's
+  bound writes and `confirmOnChain` waits for a successful receipt. **Routing is by account, not
+  connector**: each flow asks `await isSafeAccount()` at submit time — the Safe connector
+  answers `true` with no read; otherwise the account is a Safe when `getCode` finds code _and_
+  `getThreshold()` returns a non-zero value (no code, or a revert/empty return, means a regular
+  wallet), and an RPC failure **throws before anything is sent** rather than guessing (a Safe
+  misrouted to the receipt path can only time out). **For a Safe account** a flow instead
+  encodes its calls (core's `encode*` builders +
+  `client.config.addresses`) and hands them to `batchForSafe(flow, calls)`, which sends them as
+  **one EIP-5792 `wallet_sendCalls`** (so stake's approve + stake is a single Safe tx —
+  sequencing them would block the stake on an approval a multisig may not execute for days),
+  registers the returned id as a pending `SafeProposal` (`{ id, flow, account, chainId }`) in
+  the store, and ends `proposed` **at once — the mutation never waits on a Safe**. Settlement
+  is **`SafeProposalWatchers`** (`components/SafeProposalWatchers.tsx`, mounted once in
+  `WidgetInner`, renders nothing): one watcher per pending proposal of the connected
+  account/chain, using **wagmi's `useWaitForCallsStatus`** (standard EIP-5792 — don't hand-roll
+  status polling) with **`timeout: 0`** (a multisig may take days) and **`query.retry: true`**
+  (Safe answers `wallet_getCallsStatus` with "Transaction not found" until its backend has
+  indexed a fresh proposal, and viem's own wait gives up after ~3s of failed polls). On
+  success it waits for the execution tx with `useWaitForTransactionReceipt` on the widget's RPC
+  (so refetched reads can't hit a node a block behind), then `invalidateFlowReads` + removes
+  the proposal; a failure/cancellation marks it `failed`. 1-of-1 and multisig take the same
+  path — a 1-of-1 just settles in seconds. Over WalletConnect the status must come from
+  `wallet_getCallsStatus` (Safe{Wallet} approves the EIP-5792 methods in its sessions), because
+  WalletConnect sends `eth_getTransactionReceipt` to its own RPC, which can't resolve a
+  `safeTxHash`. Limits: watching lasts while the widget is mounted (a reload forgets pending
+  proposals — the reload refetches anyway), and over WalletConnect the Safe{Wallet} tab must
+  stay open for the status polls to be answered (the watcher keeps retrying meanwhile).
 - **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
   (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
   `sanctions.isSanctioned` through the **unscreened** client for the connected account. Two

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { parseEther, type Address } from "viem";
 import { RewardsPanel } from "./RewardsPanel.js";
 import type { StakeViewState } from "../hooks/useStakeData.js";
+import type { SafeProposal } from "../store.js";
 import type { RewardProof } from "../hooks/useRewardProof.js";
 import type { RewardsData } from "../hooks/useRewards.js";
 
@@ -42,9 +43,18 @@ function renderPanel(state: StakeViewState = baseState()) {
   return render(<RewardsPanel state={state} symbol="SAFE" decimals={18} />);
 }
 
+// The flow's Safe proposal comes from the store via this hook (covered in
+// useSafeProposals.test); stub it to drive the notice / duplicate guard.
+let proposal: SafeProposal | undefined;
+vi.mock("../hooks/useSafeProposals.js", () => ({ useSafeProposal: () => proposal }));
+function pendingProposal(flow: SafeProposal["flow"]): SafeProposal {
+  return { id: "0xsafe", flow, account: ACCOUNT, chainId: 1, status: "pending" };
+}
+
 describe("RewardsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    proposal = undefined;
     wrongNetwork = false;
     proof = { cumulativeAmount: "1000", merkleRoot: ROOT, proof: [`0x${"bb".repeat(32)}`] };
     rewards = {
@@ -115,6 +125,13 @@ describe("RewardsPanel", () => {
     proof = { ...proof!, kycAmount: "50", kyc: false };
     renderPanel();
     expect(screen.getByText(/pending compliance checks/i)).toBeDefined();
+  });
+
+  it("blocks a duplicate claim and shows the Safe notice while a proposal is pending", () => {
+    proposal = pendingProposal("rewards");
+    renderPanel();
+    expect(screen.getByRole("button", { name: "Queued in Safe" })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
   });
 
   it("shows an alert when the flow errors", () => {

@@ -41,6 +41,9 @@ importers:
 
   apps/website:
     dependencies:
+      '@chainza/safenet-staking-core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@chainza/safenet-staking-widget':
         specifier: workspace:*
         version: link:../../packages/widget

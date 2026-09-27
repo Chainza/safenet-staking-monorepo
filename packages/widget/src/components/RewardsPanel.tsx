@@ -8,6 +8,8 @@ import { useWrongNetwork } from "../hooks/useWrongNetwork.js";
 import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
 import { Summary, SummaryRow } from "./Summary.js";
+import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 import type { PanelProps } from "./StakePanel.js";
 
 /** Rewards flow → `MerkleDrop.claim` with the account's published proof.
@@ -19,6 +21,7 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
   const { data: proof } = useRewardProof();
   const rewards = useRewards();
   const { mutate: claim, isPending, error } = useClaimRewards();
+  const proposal = useSafeProposal("rewards");
   const wrongNetwork = useWrongNetwork();
 
   // A missing proof covers both "still loading" and "no rewards ever" (404).
@@ -46,7 +49,8 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
     proof.kycAmount !== undefined && BigInt(proof.kycAmount) > ZERO && proof.kyc !== true;
 
   // Same cascade shape as the other panels: every branch before the last is a
-  // blocked state; only the final one submits.
+  // blocked state; only the final one submits. A claim already queued in the
+  // Safe blocks a duplicate proposal until it executes.
   let label: string;
   let canSubmit: boolean;
   if (wrongNetwork) {
@@ -54,6 +58,9 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
     canSubmit = false;
   } else if (isPending) {
     label = "Claiming…";
+    canSubmit = false;
+  } else if (proposal?.status === "pending") {
+    label = "Queued in Safe";
     canSubmit = false;
   } else if (rewards.rootStale) {
     label = "Rewards update in progress";
@@ -112,6 +119,8 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
           Claim failed. Please try again.
         </p>
       )}
+
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }

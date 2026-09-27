@@ -5,6 +5,7 @@ import { useConnection } from "wagmi";
 import type { Theme } from "../theme.js";
 import { WalletControl } from "../WalletControl.js";
 import { BrandLogo } from "./BrandLogo.js";
+import { PositionBadges } from "./PositionBadges.js";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-full px-4 py-2 text-sm font-medium transition-colors ${
@@ -34,7 +35,9 @@ interface HeaderProps {
  * only renders while a wallet is connected — the Activity page is
  * wallet-scoped (it redirects to Stake otherwise). Below the `xs` breakpoint
  * (600px) the nav and wallet control collapse into a single burger menu;
- * the theme switcher stays inline, left of the burger button.
+ * the theme switcher stays inline, left of the burger button. While
+ * connected, the account's SAFE position pill sits left of the wallet control
+ * (≥ 1400px) or at the top of the burger menu.
  */
 export function Header({ theme, onToggleTheme }: HeaderProps) {
   const { isConnected } = useConnection();
@@ -66,6 +69,10 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
       )}
 
       <div className="flex items-center gap-2">
+        {/* ≥ 1400px only — narrower, a full pill (all three segments) runs
+            into the centered nav, so it moves into the burger menu (< xs). */}
+        {isConnected && <PositionBadges className="hidden min-[1400px]:flex" />}
+
         {/* ≥ xs only — on mobile the wallet control moves into the burger menu. */}
         <div className="hidden xs:block">
           <WalletControl />
@@ -100,6 +107,8 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
           id="header-menu"
           className="absolute inset-x-4 top-full z-50 mt-2 flex flex-col gap-3 rounded-2xl border border-[var(--page-border)] bg-[var(--page-bg)] p-4 shadow-lg xs:hidden"
         >
+          {isConnected && <PositionBadges className="self-start" tooltipAlign="left" />}
+
           {isConnected && (
             <nav aria-label="Primary" className="flex flex-col gap-1">
               <NavLink to="/" end className={menuNavLinkClass} onClick={closeMenu}>

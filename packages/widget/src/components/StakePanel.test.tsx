@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { parseEther, type Address } from "viem";
 import { StakePanel } from "./StakePanel.js";
 import type { StakeViewState } from "../hooks/useStakeData.js";
+import type { SafeProposal } from "../store.js";
 
 const VALIDATOR = "0x3D58a5475c1336b0A755c3aBd298CeB9b7BB9CDe" as Address;
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as Address;
@@ -48,9 +49,18 @@ function renderPanel(state: StakeViewState) {
   return render(<StakePanel state={state} symbol="SAFE" decimals={18} />);
 }
 
+// The flow's Safe proposal comes from the store via this hook (covered in
+// useSafeProposals.test); stub it to drive the notice / duplicate guard.
+let proposal: SafeProposal | undefined;
+vi.mock("../hooks/useSafeProposals.js", () => ({ useSafeProposal: () => proposal }));
+function pendingProposal(flow: SafeProposal["flow"]): SafeProposal {
+  return { id: "0xsafe", flow, account: ACCOUNT, chainId: 1, status: "pending" };
+}
+
 describe("StakePanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    proposal = undefined;
     stakeReturn = { mutate: stakeMutate, isPending: false, step: "idle", error: null };
     allowance = 0n;
     wrongNetwork = false;
@@ -123,6 +133,17 @@ describe("StakePanel", () => {
     stakeReturn = { mutate: stakeMutate, isPending: true, step: "staking", error: null };
     renderPanel(baseState());
     expect(screen.getByRole("button", { name: "Staking…" })).toBeDefined();
+  });
+
+  it("tells the user the stake is queued while its Safe proposal is pending", () => {
+    proposal = pendingProposal("stake");
+    renderPanel(baseState());
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
+  });
+
+  it("shows no Safe notice without a proposal", () => {
+    renderPanel(baseState());
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("shows an alert when the flow errors", () => {

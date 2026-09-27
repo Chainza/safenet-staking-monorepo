@@ -7,6 +7,8 @@ import { cn } from "../lib/utils.js";
 import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
 import { Badge } from "./ui/badge.js";
+import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 import type { PanelProps } from "./StakePanel.js";
 
 /** Claim flow → `staking.claimWithdrawal()` once a queued withdrawal matures
@@ -17,6 +19,7 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const { connected, withdrawals } = state;
   const nowMs = useDateNow();
   const { mutate: claim, isPending, error } = useClaim();
+  const proposal = useSafeProposal("claim");
 
   if (!connected || withdrawals.length === 0) {
     return (
@@ -45,11 +48,16 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const hasClaimable = claimable > ZERO;
 
   // `claimWithdrawal()` always settles the queue head, so a single button drives
-  // the whole panel: blocked while a claim is in flight or nothing has matured.
+  // the whole panel: blocked while a claim is in flight, already queued in the
+  // Safe (a second proposal would claim the same entry again), or nothing has
+  // matured.
   let label: string;
   let canSubmit: boolean;
   if (isPending) {
     label = "Claiming…";
+    canSubmit = false;
+  } else if (proposal?.status === "pending") {
+    label = "Queued in Safe";
     canSubmit = false;
   } else if (!hasClaimable) {
     label = "Nothing to claim yet";
@@ -129,6 +137,8 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
           Claim failed. Please try again.
         </p>
       )}
+
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }
