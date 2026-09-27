@@ -10,7 +10,7 @@ const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as Address;
 // The flow hook is exercised in its own suite; here we stub it to drive the
 // panel's button copy / submit wiring deterministically.
 const claimMutate = vi.fn();
-let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown };
+let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown; data?: unknown };
 vi.mock("../hooks/useClaim.js", () => ({ useClaim: () => claimReturn }));
 
 // Freeze "now" so countdowns are deterministic (ms; claimableAt is unix seconds).
@@ -79,6 +79,18 @@ describe("ClaimPanel", () => {
     claimReturn = { mutate: claimMutate, isPending: true, error: null };
     renderPanel(baseState({ withdrawals: [matured] }));
     expect(screen.getByRole("button", { name: "Claiming…" })).toHaveProperty("disabled", true);
+  });
+
+  it("blocks a duplicate claim and shows the Safe notice once a claim was proposed", () => {
+    claimReturn = {
+      mutate: claimMutate,
+      isPending: false,
+      error: null,
+      data: { status: "proposed", safeTxHash: "0xsafe" },
+    };
+    renderPanel(baseState({ withdrawals: [matured] }));
+    expect(screen.getByRole("button", { name: "Queued in Safe" })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
   });
 
   it("shows an alert when the flow errors", () => {

@@ -15,7 +15,7 @@ const ROOT = `0x${"aa".repeat(32)}` as const;
 let proof: RewardProof | null | undefined;
 let rewards: RewardsData;
 const claimMutate = vi.fn();
-let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown };
+let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown; data?: unknown };
 let wrongNetwork = false;
 
 vi.mock("../hooks/useRewardProof.js", () => ({ useRewardProof: () => ({ data: proof }) }));
@@ -115,6 +115,18 @@ describe("RewardsPanel", () => {
     proof = { ...proof!, kycAmount: "50", kyc: false };
     renderPanel();
     expect(screen.getByText(/pending compliance checks/i)).toBeDefined();
+  });
+
+  it("blocks a duplicate claim and shows the Safe notice once a claim was proposed", () => {
+    claimReturn = {
+      mutate: claimMutate,
+      isPending: false,
+      error: null,
+      data: { status: "proposed", safeTxHash: "0xsafe" },
+    };
+    renderPanel();
+    expect(screen.getByRole("button", { name: "Queued in Safe" })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
   });
 
   it("shows an alert when the flow errors", () => {

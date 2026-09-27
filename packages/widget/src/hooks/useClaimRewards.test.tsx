@@ -9,15 +9,26 @@ import type { RewardProof } from "./useRewardProof.js";
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
 const ROOT = `0x${"aa".repeat(32)}` as const;
 const PATH = [`0x${"bb".repeat(32)}`] as const;
+const STAKING = "0x115E78f160e1E3eF163B05C84562Fa16fA338509" as const;
+const TOKEN = "0x5aFE3855358E112B5647B952709E6165e1c1eEEe" as const;
+const MERKLE_DROP = "0xe5139Fc0FB8eae81e30d8a85C22E88c6757120f2" as const;
+const SAFE_TX_HASH = `0x${"5a".repeat(32)}`;
+const addresses = { staking: STAKING, token: TOKEN, merkleDrop: MERKLE_DROP };
 
-// Client seam, proof fetch and the two wagmi hooks are stubbed; the mutation
-// and its invalidation logic stay real (a fresh QueryClient per test).
+// Client seam, proof fetch and the wagmi hooks are stubbed; the mutation and
+// its invalidation logic stay real (a fresh QueryClient per test).
+// `connectorType` switches between a regular wallet and the Safe App connector.
 const claim = vi.fn();
+const encodeClaim = vi.fn();
 const waitForTransactionReceipt = vi.fn();
+const sendCalls = vi.fn();
+const waitForCallsStatus = vi.fn();
+const safeThreshold = vi.fn();
+let connectorType = "injected";
 
 const client = {
-  config: { chainId: 1 },
-  rewards: { claim },
+  config: { chainId: 1, addresses },
+  rewards: { claim, encodeClaim },
 } as unknown as SafeStakeClient;
 
 let proof: RewardProof | null;
@@ -27,8 +38,17 @@ vi.mock("./useRewardProof.js", async (importOriginal) => ({
   useRewardProof: () => ({ data: proof }),
 }));
 vi.mock("wagmi", () => ({
-  useConnection: () => ({ address: ACCOUNT }),
-  usePublicClient: () => ({ waitForTransactionReceipt }),
+  useChainId: () => 1,
+  useConnection: () => ({ address: ACCOUNT, connector: { type: connectorType } }),
+  // No code at the account: a regular wallet unless the Safe App connector is used.
+  usePublicClient: () => ({
+    waitForTransactionReceipt,
+    readContract: safeThreshold,
+    getCode: async () => undefined,
+  }),
+  useWalletClient: () => ({
+    data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
+  }),
 }));
 
 let queryClient: QueryClient;
@@ -43,6 +63,27 @@ describe("useClaimRewards", () => {
     proof = { cumulativeAmount: "1000", merkleRoot: ROOT, proof: [...PATH] };
     waitForTransactionReceipt.mockResolvedValue({ status: "success" });
     claim.mockResolvedValue("0xrewards");
+    encodeClaim.mockReturnValue("0xencoded");
+    sendCalls.mockResolvedValue({ id: SAFE_TX_HASH });
+    // A multisig by default: Safe-path flows end `proposed` without waiting.
+    safeThreshold.mockResolvedValue(2n);
+    connectorType = "injected";
+  });
+
+  it("proposes the claim in the Safe with the proof's values, and invalidates nothing", async () => {
+    connectorType = "safe";
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useClaimRewards(), { wrapper });
+
+    act(() => result.current.mutate());
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(encodeClaim).toHaveBeenCalledWith(ACCOUNT, 1000n, ROOT, PATH);
+    expect(sendCalls).toHaveBeenCalledWith({ calls: [{ to: MERKLE_DROP, data: "0xencoded" }] });
+    expect(claim).not.toHaveBeenCalled();
+    expect(waitForTransactionReceipt).not.toHaveBeenCalled();
+    expect(invalidate).not.toHaveBeenCalled();
+    expect(result.current.data).toEqual({ status: "proposed", safeTxHash: SAFE_TX_HASH });
   });
 
   it("claims with the proof's cumulative amount, root and path, then waits for the receipt", async () => {

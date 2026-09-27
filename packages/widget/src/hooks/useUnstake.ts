@@ -1,10 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useConnection, usePublicClient } from "wagmi";
-import type { Address, Hash } from "viem";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConnection } from "wagmi";
+import type { Address } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
-import { waitForSuccessfulReceipt } from "../lib/receipt.js";
+import { useConnectionScopedMutation } from "./useConnectionScopedMutation.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
+import { useTxSender, type TxOutcome } from "./useTxSender.js";
 import { withdrawalsQueryKey } from "./useWithdrawals.js";
 
 export interface UnstakeVars {
@@ -19,30 +20,37 @@ export interface UnstakeVars {
  * delay clears (then `claimWithdrawal` releases it). A single tx — unlike stake
  * there's no token approval involved.
  *
- * On success it invalidates every read the tx moves (the account's staked
- * balances, the validator stake totals, and the withdrawal queue) so the panels
- * refresh. Mutations never auto-retry (a write may have broadcast despite an
- * error).
+ * Once the tx is confirmed it invalidates every read it moves (the account's
+ * staked balances, the validator stake totals, and the withdrawal queue) so the
+ * panels refresh; a Safe proposal moves nothing yet (see `useTxSender`).
+ * Mutations never auto-retry (a write may have broadcast despite an error).
  */
 export function useUnstake() {
   const { address } = useConnection();
   const client = useSafeStakeClient();
-  const publicClient = usePublicClient();
+  const sender = useTxSender();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ validator, amount }: UnstakeVars): Promise<Hash> => {
+  return useConnectionScopedMutation({
+    mutationFn: async ({ validator, amount }: UnstakeVars): Promise<TxOutcome> => {
       assert(
-        client !== undefined && address !== undefined && publicClient !== undefined,
+        client !== undefined && address !== undefined,
         "unstake requires a connected wallet on a supported chain",
       );
 
-      const hash = await client.staking.initiateWithdrawal(validator, amount);
-      await waitForSuccessfulReceipt(publicClient, hash);
-      return hash;
+      if (await sender.isSafeAccount()) {
+        return sender.batchForSafe([
+          {
+            to: client.config.addresses.staking,
+            data: client.staking.encodeInitiateWithdrawal(validator, amount),
+          },
+        ]);
+      }
+      return sender.confirmOnChain(await client.staking.initiateWithdrawal(validator, amount));
     },
     onError: (err) => logger.error("unstake failed:", err),
-    onSuccess: () => {
+    onSuccess: (outcome) => {
+      if (outcome.status !== "confirmed") return;
       const chainId = client?.config.chainId;
       queryClient.invalidateQueries({ queryKey: withdrawalsQueryKey(chainId, address) });
       // Prefix-match every staked-balance / validator-stakes entry for this
