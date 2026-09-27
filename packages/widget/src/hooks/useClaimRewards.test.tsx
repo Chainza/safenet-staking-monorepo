@@ -38,6 +38,7 @@ vi.mock("./useRewardProof.js", async (importOriginal) => ({
   useRewardProof: () => ({ data: proof }),
 }));
 vi.mock("wagmi", () => ({
+  useChainId: () => 1,
   useConnection: () => ({ address: ACCOUNT, connector: { type: connectorType } }),
   // No code at the account: a regular wallet unless the Safe App connector is used.
   usePublicClient: () => ({

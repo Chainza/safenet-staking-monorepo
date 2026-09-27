@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useConnection } from "wagmi";
 import type { Address } from "viem";
 import { assert } from "ts-essentials";
 import { logger } from "../lib/logger.js";
+import { useConnectionScopedMutation } from "./useConnectionScopedMutation.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useTxSender, type TxOutcome } from "./useTxSender.js";
 import { withdrawalsQueryKey } from "./useWithdrawals.js";
@@ -30,7 +31,7 @@ export function useUnstake() {
   const sender = useTxSender();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useConnectionScopedMutation({
     mutationFn: async ({ validator, amount }: UnstakeVars): Promise<TxOutcome> => {
       assert(
         client !== undefined && address !== undefined,
