@@ -179,7 +179,10 @@ widget's own `build:css` _and_ the website resolving it to source.
   `src/wagmi.ts`. Like WalletConnect, `@wagmi/connectors` lazy-imports the Safe SDK and does not
   bundle it, so **`@safe-global/safe-apps-sdk` + `@safe-global/safe-apps-provider`** are the
   widget's _optional_ peers (ranges matching `@wagmi/connectors`'s own) and the website's
-  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's.
+  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's. **Under this
+  connector a write's "hash" is a `safeTxHash`** (the Safe provider returns it from
+  `eth_sendTransaction`), which no RPC knows — so write flows must never wait for its receipt;
+  see `useTxSender` under **On-chain data hooks**.
 - **Connect UI — `src/components/WalletControl.tsx`** is built directly on wagmi hooks —
   **no ConnectKit or extra wallet UI lib**. Mind the **wagmi v3 deprecations**: use `useConnection`
   (not `useAccount`), and the mutation hooks' `mutate` (not the deprecated `connect`/`disconnect`
@@ -228,10 +231,11 @@ widget's own `build:css` _and_ the website resolving it to source.
   `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
   inferred tuple-array return.
 - **Writes are mutation hooks, one per flow.** A write flow is a `useMutation` hook
-  (`useSomeAction`) colocated with its reads, calling the bound `client.*` writes and waiting for
-  each tx with wagmi's `usePublicClient().waitForTransactionReceipt`; on success it
+  (`useSomeAction`) colocated with its reads that sends and settles through **`useTxSender`**
+  (below) and resolves to a `TxOutcome`; once it's `confirmed` it
   `queryClient.invalidateQueries` the reads the tx moves (use the exported key builders, or a
-  partial-key prefix to sweep every validator/account variant). **Stake — `hooks/useStake.ts`.**
+  partial-key prefix to sweep every validator/account variant) — a `proposed` outcome moved
+  nothing, so it invalidates nothing. **Stake — `hooks/useStake.ts`.**
   SAFE's `stake(validator, amount)` takes **no permit signature**, so a short allowance forces a
   separate `approve` tx first; the flow re-reads `token.getAllowance` at submit time (the cached
   `useSafeAllowance` read may be stale) and sends `approve` → waits → `stake` → waits, exposing a
@@ -245,7 +249,28 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   `StakePanel`/`UnstakePanel` share `parseAmount` (in `lib/format.ts`, the parse counterpart to
   `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
-  `error`.
+  `error`. Every panel renders `SafeProposedNotice` with its mutation's `data` (it shows only for
+  a `proposed` outcome); `ClaimPanel`/`RewardsPanel` also block a duplicate proposal with a
+  disabled "Queued in Safe" branch, since a second claim of the same entry would fail on execution.
+- **Sending + settling a tx — `hooks/useTxSender.ts`** is the one seam every write flow goes
+  through; flows never call `waitForTransactionReceipt` or `sendCalls` themselves. It returns
+  `{ isSafe, batchForSafe, confirmOnChain }` and the `TxOutcome` union (`confirmed` with the
+  on-chain `hash`, or `proposed` with the `safeTxHash`). Regular wallets send through core's
+  bound writes and `confirmOnChain` waits for a successful receipt. **Under the Safe connector**
+  (`connector.type === "safe"`) a flow instead encodes its calls (core's `encode*` builders +
+  `client.config.addresses`) and hands them to `batchForSafe`, which sends them as **one EIP-5792
+  `wallet_sendCalls`** (so stake's approve + stake is a single Safe tx — sequencing them would
+  block the stake on an approval a multisig may not execute for days), then reads the Safe's
+  on-chain `getThreshold()`: a **multisig ends `proposed` at once** (one signer can't execute it);
+  a **1-of-1 waits** on `waitForCallsStatus` (bounded by `SAFE_EXECUTION_TIMEOUT_MS`, 180s)
+  — success hands the real execution hash (from the returned receipts) to `confirmOnChain`, so
+  our own RPC has the block before reads refetch; a failed/cancelled Safe tx throws; a timeout
+  (signed, not executed) ends `proposed`. **After `wallet_sendCalls` returns the calls are
+  queued, so any failing lookup degrades to `proposed` — never report a queued tx as failed.**
+  Known gaps (tracked in TODO.md): there is **no background polling** of a
+  `proposed` tx, so after a multisig executes later the reads stay stale until reload (the
+  QueryClient has `refetchOnMount`/`refetchOnWindowFocus` off); and a Safe connected **via
+  WalletConnect** (not as a Safe App) isn't detected, so it still takes the receipt path.
 - **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
   (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
   `sanctions.isSanctioned` through the **unscreened** client for the connected account. Two
@@ -378,7 +403,7 @@ Today core sits at ~70% with everything at 100% except `client.ts` (the bound
      default (`BuildHIR::lowerAssignment … got: AssignmentPattern`) — silently, so the only symptom
      is lost memoization.
   2. **Never write a bigint literal inside a component or hook.** The compiler can't lower
-     `BigIntLiteral` and bails out of the whole function; import `ZERO` from `lib/bigint.ts`
+     `BigIntLiteral` and bails out of the whole function; import `ZERO`/`ONE` from `lib/bigint.ts`
      (or hoist the literal to module scope). Plain non-React functions are unaffected.
   3. **Bailouts are silent.** After touching this setup, check coverage by running Babel with the
      compiler's `logger` over `src` and asserting no `CompileError` events (75 functions compile
