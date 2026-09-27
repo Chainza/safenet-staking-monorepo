@@ -94,11 +94,18 @@ jobs:
           # public IPFS network (which can only happen once Filebase seeds it —
           # nothing else has these bytes yet). If this times out, check the
           # bucket is on the IPFS network — only those unpack CAR imports.
+          # Several gateways, first hit wins, and the body must be the built
+          # page (its <title>, as the uptime probe asserts): ipfs.io/dweb.link
+          # moved to a browser-only service-worker gateway, so a non-browser
+          # client gets a 429 or a notice page, never the content.
+          GATEWAYS="https://ipfs.filebase.io/ipfs/$CID/ https://$CID.ipfs.4everland.io/ https://$CID.ipfs.dweb.link/"
           for i in $(seq 1 40); do
-            if curl -sf --max-time 30 -o /dev/null "https://ipfs.io/ipfs/$CID/"; then
-              echo "CID resolves on the public IPFS network."
-              exit 0
-            fi
+            for url in $GATEWAYS; do
+              if curl -sf --max-time 30 "$url" | grep -q "<title>SAFE Staking</title>"; then
+                echo "CID resolves on the public IPFS network ($url)."
+                exit 0
+              fi
+            done
             echo "waiting for the CID to resolve ($i/40)..."
             sleep 15
           done
@@ -142,6 +149,7 @@ jobs:
 
           - Gateway (subdomain): https://$CID.ipfs.dweb.link/
           - Gateway (path): https://ipfs.io/ipfs/$CID/
+          - Gateway (Filebase, also serves non-browser clients): https://ipfs.filebase.io/ipfs/$CID/
           - Any other IPFS gateway, or a local node: \`ipfs://$CID\`
           - Via ENS, once safenetstake.eth's contenthash record is updated to the value above: https://safenetstake.eth.limo / [.eth.link](https://safenetstake.eth.link) / [.eth.sucks](https://safenetstake.eth.sucks), or safenetstake.eth directly in an ENS-aware browser
 
