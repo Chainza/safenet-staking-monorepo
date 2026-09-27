@@ -156,7 +156,8 @@ widget's own `build:css` _and_ the website resolving it to source.
   layout-effect sync, and read by selector (`useWidgetStore(s => s.resolvedMode)`) — no
   per-value contexts, no prop-drilling. `Widget` splits into a thin outer `Widget` (mounts
   providers) + `WidgetInner` (calls wagmi hooks, always inside them).
-- **Shared UI state lives in the store** (`resolvedMode`, active `tab`, `selectedValidator`) —
+- **Shared UI state lives in the store** (`resolvedMode`, active `tab`, `selectedValidator`, the
+  pending `safeProposals` — see `useTxSender`) —
   read by selector, never drilled. **Transient, component-local state stays in `useState`**
   (form `amount` inputs, the connector-picker `open` flag): globalizing those would share them
   across instances and across panels. Because the store is module-global, tests must reset it
@@ -251,10 +252,12 @@ widget's own `build:css` _and_ the website resolving it to source.
   `useMutation` that resets when the account or chain changes, so a previous account's
   outcome — a queued Safe tx, a failure alert — never leaks into the next; never use bare
   `useMutation` for a write). It sends and settles through **`useTxSender`**
-  (below) and resolves to a `TxOutcome`; once it's `confirmed` it
-  `queryClient.invalidateQueries` the reads the tx moves (use the exported key builders, or a
-  partial-key prefix to sweep every validator/account variant) — a `proposed` outcome moved
-  nothing, so it invalidates nothing. **Stake — `hooks/useStake.ts`.**
+  (below) and resolves to a `TxOutcome`; once it's `confirmed` it calls
+  **`invalidateFlowReads(queryClient, flow, chainId, account)`** (`hooks/invalidateFlowReads.ts`)
+  — the **one list per flow** of reads its tx moves (exported key builders, or a partial-key
+  prefix to sweep every validator/account variant), shared with the Safe proposal watcher;
+  add a new flow's reads there, never inline. A `proposed` outcome moved nothing yet, so it
+  invalidates nothing — the watcher does once the Safe executes. **Stake — `hooks/useStake.ts`.**
   SAFE's `stake(validator, amount)` takes **no permit signature**, so a short allowance forces a
   separate `approve` tx first; the flow re-reads `token.getAllowance` at submit time (the cached
   `useSafeAllowance` read may be stale) and sends `approve` → waits → `stake` → waits, exposing a
@@ -268,9 +271,11 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   `StakePanel`/`UnstakePanel` share `parseAmount` (in `lib/format.ts`, the parse counterpart to
   `formatToken`) and derive `label` + `canSubmit` from one `if/else` cascade (`!connected` → `useWrongNetwork()` → in-flight → amount
   guards → ready); the cascade gates submission and surfaces a generic inline `role="alert"` on
-  `error`. Every panel renders `SafeProposedNotice` with its mutation's `data` (it shows only for
-  a `proposed` outcome); `ClaimPanel`/`RewardsPanel` also block a duplicate proposal with a
-  disabled "Queued in Safe" branch, since a second claim of the same entry would fail on execution.
+  `error`. Every panel renders `SafeProposedNotice` with `useSafeProposal(flow)` — its flow's
+  proposal from the store, so it survives the tab unmounting (pending → "Queued in your Safe";
+  failed → a failure alert); `ClaimPanel`/`RewardsPanel` also block a duplicate proposal with a
+  disabled "Queued in Safe" branch while one is pending, since a second claim of the same entry
+  would fail on execution.
 - **Sending + settling a tx — `hooks/useTxSender.ts`** is the one seam every write flow goes
   through; flows never call `waitForTransactionReceipt` or `sendCalls` themselves. It returns
   `{ isSafeAccount, batchForSafe, confirmOnChain }` and the `TxOutcome` union (`confirmed` with
@@ -282,20 +287,26 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   wallet), and an RPC failure **throws before anything is sent** rather than guessing (a Safe
   misrouted to the receipt path can only time out). **For a Safe account** a flow instead
   encodes its calls (core's `encode*` builders +
-  `client.config.addresses`) and hands them to `batchForSafe`, which sends them as **one EIP-5792
-  `wallet_sendCalls`** (so stake's approve + stake is a single Safe tx — sequencing them would
-  block the stake on an approval a multisig may not execute for days), then reads the Safe's
-  on-chain `getThreshold()`: a **multisig ends `proposed` at once** (one signer can't execute it);
-  a **1-of-1 waits** on `waitForCallsStatus` (bounded by `SAFE_EXECUTION_TIMEOUT_MS`, 180s)
-  — success hands the real execution hash (from the returned receipts) to `confirmOnChain`, so
-  our own RPC has the block before reads refetch; a failed/cancelled Safe tx throws; a timeout
-  (signed, not executed) ends `proposed`. **After `wallet_sendCalls` returns the calls are
-  queued, so any failing lookup degrades to `proposed` — never report a queued tx as failed.**
-  Over WalletConnect the status must come from `wallet_getCallsStatus` (Safe{Wallet} approves
-  the EIP-5792 methods in its sessions), because WalletConnect sends `eth_getTransactionReceipt`
-  to its own RPC, which can't resolve a `safeTxHash`. Known gap (tracked in TODO.md): there is
-  **no background polling** of a `proposed` tx, so after a multisig executes later the reads
-  stay stale until reload (the QueryClient has `refetchOnMount`/`refetchOnWindowFocus` off).
+  `client.config.addresses`) and hands them to `batchForSafe(flow, calls)`, which sends them as
+  **one EIP-5792 `wallet_sendCalls`** (so stake's approve + stake is a single Safe tx —
+  sequencing them would block the stake on an approval a multisig may not execute for days),
+  registers the returned id as a pending `SafeProposal` (`{ id, flow, account, chainId }`) in
+  the store, and ends `proposed` **at once — the mutation never waits on a Safe**. Settlement
+  is **`SafeProposalWatchers`** (`components/SafeProposalWatchers.tsx`, mounted once in
+  `WidgetInner`, renders nothing): one watcher per pending proposal of the connected
+  account/chain, using **wagmi's `useWaitForCallsStatus`** (standard EIP-5792 — don't hand-roll
+  status polling) with **`timeout: 0`** (a multisig may take days) and **`query.retry: true`**
+  (Safe answers `wallet_getCallsStatus` with "Transaction not found" until its backend has
+  indexed a fresh proposal, and viem's own wait gives up after ~3s of failed polls). On
+  success it waits for the execution tx with `useWaitForTransactionReceipt` on the widget's RPC
+  (so refetched reads can't hit a node a block behind), then `invalidateFlowReads` + removes
+  the proposal; a failure/cancellation marks it `failed`. 1-of-1 and multisig take the same
+  path — a 1-of-1 just settles in seconds. Over WalletConnect the status must come from
+  `wallet_getCallsStatus` (Safe{Wallet} approves the EIP-5792 methods in its sessions), because
+  WalletConnect sends `eth_getTransactionReceipt` to its own RPC, which can't resolve a
+  `safeTxHash`. Limits: watching lasts while the widget is mounted (a reload forgets pending
+  proposals — the reload refetches anyway), and over WalletConnect the Safe{Wallet} tab must
+  stay open for the status polls to be answered (the watcher keeps retrying meanwhile).
 - **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
   (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
   `sanctions.isSanctioned` through the **unscreened** client for the connected account. Two
@@ -428,7 +439,7 @@ Today core sits at ~70% with everything at 100% except `client.ts` (the bound
      default (`BuildHIR::lowerAssignment … got: AssignmentPattern`) — silently, so the only symptom
      is lost memoization.
   2. **Never write a bigint literal inside a component or hook.** The compiler can't lower
-     `BigIntLiteral` and bails out of the whole function; import `ZERO`/`ONE` from `lib/bigint.ts`
+     `BigIntLiteral` and bails out of the whole function; import `ZERO` from `lib/bigint.ts`
      (or hoist the literal to module scope). Plain non-React functions are unaffected.
   3. **Bailouts are silent.** After touching this setup, check coverage by running Babel with the
      compiler's `logger` over `src` and asserting no `CompileError` events (75 functions compile

@@ -12,10 +12,12 @@ Safe support: writes from a Safe account now settle instead of hanging on a
 
 ### Added
 
-- **"Queued in your Safe" notice** — every panel shows a notice after a write is
-  proposed to a Safe (confirm and execute it in Safe{Wallet}); the claim and rewards
-  buttons show "Queued in Safe" and stay disabled so the same claim can't be proposed
-  twice.
+- **"Queued in your Safe" notice** — every panel shows a notice while a write it proposed
+  to a Safe is waiting to execute (confirm and execute it in Safe{Wallet}); it clears and
+  the balances refresh once the Safe executes it, or turns into a failure notice if the
+  Safe tx fails or is cancelled. While one is pending the claim and rewards buttons show
+  "Queued in Safe" and stay disabled so the same claim can't be proposed twice — across
+  tab switches too.
 
 ### Fixed
 
@@ -24,9 +26,10 @@ Safe support: writes from a Safe account now settle instead of hanging on a
   returns a `safeTxHash`, and the flows used to wait for its receipt until viem's 180s
   timeout, then report failure for a tx that was queued or already executed. Writes
   from a Safe account are now sent as one EIP-5792 `wallet_sendCalls` batch (so stake's
-  approve + stake is a single Safe tx). A multisig ends as _proposed_ right away; a
-  1-of-1 waits for execution and then refreshes the balances like a regular wallet. A
-  tx that was queued is never reported as failed.
+  approve + stake is a single Safe tx) and end as _proposed_ right away; the widget then
+  waits on the Safe's `wallet_getCallsStatus` (wagmi's `useWaitForCallsStatus`, no timeout)
+  until it executes — seconds for a 1-of-1, whenever the owners execute a multisig — and
+  refreshes the balances. A tx that was queued is never reported as failed.
 - **Safe detection is by account, not connector** — a Safe connected over WalletConnect
   is recognized (the account has code and a non-zero `getThreshold()`), and a failing
   check aborts before anything is sent rather than guessing.
@@ -34,10 +37,12 @@ Safe support: writes from a Safe account now settle instead of hanging on a
   alert) is cleared when the connected account or chain changes, so it never shows for
   the next account.
 
-### Known gap
+### Known limits
 
-- A multisig proposal isn't polled after it's queued: once the other owners execute it,
-  the displayed balances stay stale until the page reloads.
+- A pending Safe proposal is watched while the widget is open; a page reload forgets it
+  (the reload refetches the balances anyway).
+- Over WalletConnect, the Safe{Wallet} tab must stay open for the status checks to be
+  answered; the widget keeps retrying until it is.
 
 ## [0.2.0] — 2026-08-28
 
