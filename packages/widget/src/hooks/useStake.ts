@@ -49,9 +49,12 @@ export function useStake() {
         "stake requires a connected wallet on a supported chain",
       );
 
-      const allowance = await client.token.getAllowance(address);
+      const [allowance, isSafe] = await Promise.all([
+        client.token.getAllowance(address),
+        sender.isSafeAccount(),
+      ]);
 
-      if (sender.isSafe) {
+      if (isSafe) {
         setStep("staking");
         const { staking, token } = client.config.addresses;
         const calls: EncodedCall[] = [];

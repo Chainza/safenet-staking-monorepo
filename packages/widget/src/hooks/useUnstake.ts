@@ -37,7 +37,7 @@ export function useUnstake() {
         "unstake requires a connected wallet on a supported chain",
       );
 
-      if (sender.isSafe) {
+      if (await sender.isSafeAccount()) {
         return sender.batchForSafe([
           {
             to: client.config.addresses.staking,

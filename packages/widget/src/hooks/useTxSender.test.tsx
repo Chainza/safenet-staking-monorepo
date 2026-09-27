@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { WaitForCallsStatusTimeoutError } from "viem";
+import {
+  ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
+  ContractFunctionZeroDataError,
+  HttpRequestError,
+  parseAbi,
+  WaitForCallsStatusTimeoutError,
+} from "viem";
 import { SAFE_EXECUTION_TIMEOUT_MS, useTxSender } from "./useTxSender.js";
 
 const SAFE = "0xA21E80bd9dc6a2f501D5b3DF527eA0884Ef11De4" as const;
@@ -12,8 +19,11 @@ const CALLS = [
   { to: STAKING, data: "0x02" as const },
 ];
 
-// The three wagmi hooks the seam reads are stubbed; `connectorType` flips the
-// connected wallet between a Safe App and a regular EOA wallet.
+const SAFE_CODE = "0x608060405273ffffffffffffffffffffffffffffffffffffffff600054167fa619486e";
+const safeAbi = parseAbi(["function getThreshold() view returns (uint256)"]);
+
+// The three wagmi hooks the seam reads are stubbed; `connectorType` picks the
+// connector (the Safe App connector, WalletConnect, an injected wallet…).
 let connectorType: string | undefined;
 let walletClient:
   | {
@@ -24,6 +34,7 @@ let walletClient:
   | undefined;
 let publicClient:
   | {
+      getCode: ReturnType<typeof vi.fn>;
       readContract: ReturnType<typeof vi.fn>;
       waitForTransactionReceipt: ReturnType<typeof vi.fn>;
     }
@@ -31,6 +42,7 @@ let publicClient:
 
 vi.mock("wagmi", () => ({
   useConnection: () => ({
+    address: SAFE,
     connector: connectorType === undefined ? undefined : { type: connectorType },
   }),
   usePublicClient: () => publicClient,
@@ -57,20 +69,72 @@ describe("useTxSender", () => {
       waitForCallsStatus: vi.fn().mockResolvedValue(executed()),
     };
     publicClient = {
+      getCode: vi.fn().mockResolvedValue(SAFE_CODE),
       readContract: vi.fn().mockResolvedValue(1n),
       waitForTransactionReceipt: vi.fn().mockResolvedValue({ status: "success" }),
     };
   });
 
-  it("flags the Safe connector and nothing else", () => {
-    connectorType = "safe";
-    expect(renderHook(() => useTxSender()).result.current.isSafe).toBe(true);
+  describe("isSafeAccount", () => {
+    const isSafeAccount = () => renderHook(() => useTxSender()).result.current.isSafeAccount();
 
-    connectorType = "injected";
-    expect(renderHook(() => useTxSender()).result.current.isSafe).toBe(false);
+    it("trusts the Safe App connector without reading the chain", async () => {
+      connectorType = "safe";
 
-    connectorType = undefined;
-    expect(renderHook(() => useTxSender()).result.current.isSafe).toBe(false);
+      await expect(isSafeAccount()).resolves.toBe(true);
+      expect(publicClient?.getCode).not.toHaveBeenCalled();
+      expect(publicClient?.readContract).not.toHaveBeenCalled();
+    });
+
+    it("detects a Safe connected over another connector (e.g. WalletConnect)", async () => {
+      connectorType = "walletConnect";
+
+      await expect(isSafeAccount()).resolves.toBe(true);
+      expect(publicClient?.getCode).toHaveBeenCalledWith({ address: SAFE });
+      expect(publicClient?.readContract).toHaveBeenCalledWith(
+        expect.objectContaining({ address: SAFE, functionName: "getThreshold" }),
+      );
+    });
+
+    it("treats an account without code (an EOA) as a regular wallet", async () => {
+      for (const code of [undefined, "0x"]) {
+        publicClient?.getCode.mockResolvedValue(code);
+        await expect(isSafeAccount()).resolves.toBe(false);
+      }
+      expect(publicClient?.readContract).not.toHaveBeenCalled();
+    });
+
+    it("treats a contract whose getThreshold() reverts as a regular wallet", async () => {
+      publicClient?.readContract.mockRejectedValue(
+        new ContractFunctionExecutionError(
+          new ContractFunctionRevertedError({ abi: safeAbi, functionName: "getThreshold" }),
+          { abi: safeAbi, functionName: "getThreshold", contractAddress: SAFE },
+        ),
+      );
+      await expect(isSafeAccount()).resolves.toBe(false);
+    });
+
+    it("treats a contract whose getThreshold() returns nothing as a regular wallet", async () => {
+      publicClient?.readContract.mockRejectedValue(
+        new ContractFunctionZeroDataError({ functionName: "getThreshold" }),
+      );
+      await expect(isSafeAccount()).resolves.toBe(false);
+    });
+
+    it("rejects a zero threshold (no Safe has zero owners)", async () => {
+      publicClient?.readContract.mockResolvedValue(0n);
+      await expect(isSafeAccount()).resolves.toBe(false);
+    });
+
+    it("throws on an RPC failure instead of guessing a route", async () => {
+      publicClient?.readContract.mockRejectedValue(
+        new HttpRequestError({ url: "https://rpc.example", status: 503 }),
+      );
+      await expect(isSafeAccount()).rejects.toThrow(HttpRequestError);
+
+      publicClient?.getCode.mockRejectedValue(new Error("rpc down"));
+      await expect(isSafeAccount()).rejects.toThrow("rpc down");
+    });
   });
 
   describe("batchForSafe", () => {

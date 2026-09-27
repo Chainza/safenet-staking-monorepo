@@ -31,7 +31,12 @@ const client = {
 vi.mock("./useSafeStakeClient.js", () => ({ useSafeStakeClient: () => client }));
 vi.mock("wagmi", () => ({
   useConnection: () => ({ address: ACCOUNT, connector: { type: connectorType } }),
-  usePublicClient: () => ({ waitForTransactionReceipt, readContract: safeThreshold }),
+  // No code at the account: a regular wallet unless the Safe App connector is used.
+  usePublicClient: () => ({
+    waitForTransactionReceipt,
+    readContract: safeThreshold,
+    getCode: async () => undefined,
+  }),
   useWalletClient: () => ({
     data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
   }),

@@ -41,7 +41,7 @@ export function useClaimRewards() {
         proof.merkleRoot,
         proof.proof,
       ] as const;
-      if (sender.isSafe) {
+      if (await sender.isSafeAccount()) {
         return sender.batchForSafe([
           { to: client.config.addresses.merkleDrop, data: client.rewards.encodeClaim(...args) },
         ]);

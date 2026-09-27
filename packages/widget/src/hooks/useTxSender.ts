@@ -1,7 +1,16 @@
 import { useConnection, usePublicClient, useWalletClient } from "wagmi";
-import { parseAbi, WaitForCallsStatusTimeoutError, type Address, type Hash, type Hex } from "viem";
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  ContractFunctionZeroDataError,
+  parseAbi,
+  WaitForCallsStatusTimeoutError,
+  type Address,
+  type Hash,
+  type Hex,
+} from "viem";
 import { assert } from "ts-essentials";
-import { ONE } from "../lib/bigint.js";
+import { ONE, ZERO } from "../lib/bigint.js";
 import { logger } from "../lib/logger.js";
 import { waitForSuccessfulReceipt } from "../lib/receipt.js";
 
@@ -27,14 +36,28 @@ export const SAFE_EXECUTION_TIMEOUT_MS = 180_000;
 
 const safeAbi = parseAbi(["function getThreshold() view returns (uint256)"]);
 
+/** True when the error means "this contract has no working `getThreshold()`"
+ *  (a revert or an empty return) — as opposed to the RPC call itself failing. */
+function isMissingFunction(err: unknown): boolean {
+  return (
+    err instanceof BaseError &&
+    err.walk(
+      (e) =>
+        e instanceof ContractFunctionRevertedError || e instanceof ContractFunctionZeroDataError,
+    ) !== null
+  );
+}
+
 /**
  * The one place write flows learn how the connected wallet settles a tx.
  *
- * Under wagmi's Safe connector (the widget running as a Safe App) a "tx hash"
- * is really a `safeTxHash` — the hash of a Safe transaction, which no RPC knows
- * — so waiting for its receipt can only time out. `isSafe` therefore routes a
- * flow to `batchForSafe`: its calls go out as a single EIP-5792
- * `wallet_sendCalls` (Safe batches them into one MultiSend), then:
+ * When the connected account is a Safe — the widget running as a Safe App, or a
+ * Safe connected from Safe{Wallet} over WalletConnect (the same Safe provider
+ * answers both) — a "tx hash" is often a `safeTxHash`: the hash of a Safe
+ * transaction, which no RPC knows, so waiting for its receipt can only time
+ * out. `isSafeAccount()` (asked at submit time) therefore routes a flow to
+ * `batchForSafe`: its calls go out as a single EIP-5792 `wallet_sendCalls`
+ * (Safe batches them into one MultiSend), then:
  *
  * - a **multisig** (threshold > 1) ends `proposed` at once — the signer alone
  *   can't execute it, so there's nothing to wait for;
@@ -49,7 +72,7 @@ const safeAbi = parseAbi(["function getThreshold() view returns (uint256)"]);
  * `confirmOnChain` waits for a successful receipt.
  */
 export function useTxSender() {
-  const { connector } = useConnection();
+  const { address, connector } = useConnection();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
@@ -57,6 +80,35 @@ export function useTxSender() {
     assert(publicClient !== undefined, "waiting for a receipt requires a public client");
     await waitForSuccessfulReceipt(publicClient, hash);
     return { status: "confirmed", hash };
+  };
+
+  /**
+   * Whether the connected account is a Safe. The Safe connector answers without
+   * a read; for any other connector the account is a Safe when it has code and
+   * a working `getThreshold()` (a non-zero one — every Safe needs ≥ 1 owner).
+   * No code, or a contract without that function, is a regular wallet. An RPC
+   * failure throws: nothing has been sent yet, and guessing "regular wallet"
+   * would put a Safe on the receipt path that can only time out.
+   */
+  const isSafeAccount = async (): Promise<boolean> => {
+    if (connector?.type === "safe") return true;
+    assert(
+      address !== undefined && publicClient !== undefined,
+      "detecting a Safe account requires a connected wallet and a public client",
+    );
+    const code = await publicClient.getCode({ address });
+    if (code === undefined || code === "0x") return false;
+    try {
+      const threshold = await publicClient.readContract({
+        address,
+        abi: safeAbi,
+        functionName: "getThreshold",
+      });
+      return threshold > ZERO;
+    } catch (err) {
+      if (isMissingFunction(err)) return false;
+      throw err;
+    }
   };
 
   const batchForSafe = async (calls: readonly EncodedCall[]): Promise<TxOutcome> => {
@@ -97,5 +149,5 @@ export function useTxSender() {
     return confirmOnChain(hash);
   };
 
-  return { isSafe: connector?.type === "safe", batchForSafe, confirmOnChain };
+  return { isSafeAccount, batchForSafe, confirmOnChain };
 }
