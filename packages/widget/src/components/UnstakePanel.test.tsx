@@ -11,7 +11,12 @@ const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as Address;
 // The flow hooks are exercised in their own suites; here we stub them to drive
 // the panel's button copy / submit wiring deterministically.
 const unstakeMutate = vi.fn();
-let unstakeReturn: { mutate: typeof unstakeMutate; isPending: boolean; error: unknown };
+let unstakeReturn: {
+  mutate: typeof unstakeMutate;
+  isPending: boolean;
+  error: unknown;
+  data?: unknown;
+};
 vi.mock("../hooks/useUnstake.js", () => ({ useUnstake: () => unstakeReturn }));
 
 let wrongNetwork = false;
@@ -99,6 +104,17 @@ describe("UnstakePanel", () => {
     unstakeReturn = { mutate: unstakeMutate, isPending: true, error: null };
     renderPanel(baseState());
     expect(screen.getByRole("button", { name: "Unstaking…" })).toHaveProperty("disabled", true);
+  });
+
+  it("tells the user the unstake is queued once it was proposed in their Safe", () => {
+    unstakeReturn = {
+      mutate: unstakeMutate,
+      isPending: false,
+      error: null,
+      data: { status: "proposed", safeTxHash: "0xsafe" },
+    };
+    renderPanel(baseState());
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
   });
 
   it("shows an alert when the flow errors", () => {

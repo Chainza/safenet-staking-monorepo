@@ -11,7 +11,13 @@ const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as Address;
 // The flow hooks are exercised in their own suites; here we stub them to drive
 // the panel's button copy / submit wiring deterministically.
 const stakeMutate = vi.fn();
-let stakeReturn: { mutate: typeof stakeMutate; isPending: boolean; step: string; error: unknown };
+let stakeReturn: {
+  mutate: typeof stakeMutate;
+  isPending: boolean;
+  step: string;
+  error: unknown;
+  data?: unknown;
+};
 let allowance: bigint | undefined;
 vi.mock("../hooks/useStake.js", () => ({ useStake: () => stakeReturn }));
 vi.mock("../hooks/useSafeAllowance.js", () => ({ useSafeAllowance: () => ({ data: allowance }) }));
@@ -123,6 +129,30 @@ describe("StakePanel", () => {
     stakeReturn = { mutate: stakeMutate, isPending: true, step: "staking", error: null };
     renderPanel(baseState());
     expect(screen.getByRole("button", { name: "Staking…" })).toBeDefined();
+  });
+
+  it("tells the user the stake is queued once it was proposed in their Safe", () => {
+    stakeReturn = {
+      mutate: stakeMutate,
+      isPending: false,
+      step: "idle",
+      error: null,
+      data: { status: "proposed", safeTxHash: "0xsafe" },
+    };
+    renderPanel(baseState());
+    expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
+  });
+
+  it("shows no Safe notice for a confirmed stake", () => {
+    stakeReturn = {
+      mutate: stakeMutate,
+      isPending: false,
+      step: "idle",
+      error: null,
+      data: { status: "confirmed", hash: "0xstake" },
+    };
+    renderPanel(baseState());
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("shows an alert when the flow errors", () => {
