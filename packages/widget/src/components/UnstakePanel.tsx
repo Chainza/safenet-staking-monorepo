@@ -7,6 +7,7 @@ import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
 import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 import { ZERO } from "../lib/bigint.js";
 import { dayCount, parseAmount } from "../lib/format.js";
 import type { PanelProps } from "./StakePanel.js";
@@ -25,7 +26,8 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
   } = state;
 
   const wrongNetwork = useWrongNetwork();
-  const { mutate: unstake, isPending, error, data: outcome } = useUnstake();
+  const { mutate: unstake, isPending, error } = useUnstake();
+  const proposal = useSafeProposal("unstake");
 
   const amountWei = parseAmount(amount, decimals);
   const hasAmount = amountWei > ZERO;
@@ -116,7 +118,7 @@ export function UnstakePanel({ state, symbol, decimals }: PanelProps) {
         </p>
       )}
 
-      <SafeProposedNotice outcome={outcome} />
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }

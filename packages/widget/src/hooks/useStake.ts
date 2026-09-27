@@ -7,8 +7,7 @@ import { logger } from "../lib/logger.js";
 import { useConnectionScopedMutation } from "./useConnectionScopedMutation.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useTxSender, type EncodedCall, type TxOutcome } from "./useTxSender.js";
-import { safeBalanceQueryKey } from "./useSafeBalance.js";
-import { safeAllowanceQueryKey } from "./useSafeAllowance.js";
+import { invalidateFlowReads } from "./invalidateFlowReads.js";
 
 export interface StakeVars {
   validator: Address;
@@ -32,7 +31,8 @@ export type StakeStep = "idle" | "approving" | "staking";
  *
  * Once confirmed it invalidates every read the two txs move (wallet balance,
  * allowance, the account's staked balances and the validator stake totals) so
- * the panels refresh; a Safe proposal moves nothing yet. `step` reports which
+ * the panels refresh (`invalidateFlowReads`); a Safe proposal moves nothing
+ * until it executes, when `SafeProposalWatchers` refresh them. `step` reports which
  * tx is in flight; mutations never auto-retry (a write may have broadcast
  * despite an error).
  */
@@ -63,7 +63,7 @@ export function useStake() {
           calls.push({ to: token, data: client.token.encodeApprove(staking, amount) });
         }
         calls.push({ to: staking, data: client.staking.encodeStake(validator, amount) });
-        return sender.batchForSafe(calls);
+        return sender.batchForSafe("stake", calls);
       }
 
       if (allowance < amount) {
@@ -77,14 +77,9 @@ export function useStake() {
     onError: (err) => logger.error("stake failed:", err),
     onSettled: () => setStep("idle"),
     onSuccess: (outcome) => {
+      // A Safe proposal moved nothing yet — its watcher refreshes on execution.
       if (outcome.status !== "confirmed") return;
-      const chainId = client?.config.chainId;
-      queryClient.invalidateQueries({ queryKey: safeBalanceQueryKey(chainId, address) });
-      queryClient.invalidateQueries({ queryKey: safeAllowanceQueryKey(chainId, address) });
-      // Prefix-match every staked-balance / validator-stakes entry for this
-      // chain (any validator) — both totals move when the stake lands.
-      queryClient.invalidateQueries({ queryKey: ["safe-stake", "staked-balance", chainId] });
-      queryClient.invalidateQueries({ queryKey: ["safe-stake", "validator-stakes", chainId] });
+      invalidateFlowReads(queryClient, "stake", client?.config.chainId, address);
     },
   });
 

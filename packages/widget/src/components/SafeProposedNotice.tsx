@@ -1,15 +1,28 @@
-import { Hourglass } from "lucide-react";
-import type { TxOutcome } from "../hooks/useTxSender.js";
+import { CircleX, Hourglass } from "lucide-react";
+import type { SafeProposal } from "../store.js";
 
 /**
- * Shown under a panel's action once its write flow ended `proposed`: the calls
- * sit in the Safe's queue and nothing on-chain has moved yet. The widget does
- * not track the Safe tx afterwards, so the note tells the user where it
- * continues and why balances haven't changed. Renders nothing for any other
- * outcome (none yet, or a confirmed tx).
+ * Shown under a panel's action while its flow has a Safe proposal
+ * (`useSafeProposal`). Pending: the calls sit in the Safe's queue and nothing
+ * on-chain has moved yet — the note says where it continues; it disappears
+ * (and the balances refresh) once the Safe executes it. Failed: the Safe
+ * reported the transaction failed or was cancelled. Renders nothing without a
+ * proposal.
  */
-export function SafeProposedNotice({ outcome }: { outcome: TxOutcome | undefined }) {
-  if (outcome?.status !== "proposed") return null;
+export function SafeProposedNotice({ proposal }: { proposal: SafeProposal | undefined }) {
+  if (proposal === undefined) return null;
+
+  if (proposal.status === "failed") {
+    return (
+      <p
+        role="alert"
+        className="ss:mt-2 ss:flex ss:items-start ss:gap-2 ss:rounded-lg ss:border ss:border-error/40 ss:bg-error/10 ss:p-3 ss:text-xs ss:text-error"
+      >
+        <CircleX className="ss:mt-0.5 ss:size-4 ss:shrink-0" aria-hidden />
+        <span>Your Safe transaction failed or was cancelled. Nothing was moved.</span>
+      </p>
+    );
+  }
 
   return (
     <p
@@ -18,8 +31,8 @@ export function SafeProposedNotice({ outcome }: { outcome: TxOutcome | undefined
     >
       <Hourglass className="ss:mt-0.5 ss:size-4 ss:shrink-0" aria-hidden />
       <span>
-        Queued in your Safe. Confirm and execute it in Safe{"{Wallet}"} — balances update once it
-        runs on-chain.
+        Queued in your Safe. Confirm and execute it in Safe{"{Wallet}"} — balances update
+        automatically once it runs on-chain.
       </span>
     </p>
   );

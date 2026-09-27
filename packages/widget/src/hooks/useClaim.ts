@@ -5,8 +5,7 @@ import { logger } from "../lib/logger.js";
 import { useConnectionScopedMutation } from "./useConnectionScopedMutation.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useTxSender, type TxOutcome } from "./useTxSender.js";
-import { withdrawalsQueryKey } from "./useWithdrawals.js";
-import { safeBalanceQueryKey } from "./useSafeBalance.js";
+import { invalidateFlowReads } from "./invalidateFlowReads.js";
 
 /**
  * The claim write flow as one mutation: `claimWithdrawal()` releases the next
@@ -16,7 +15,8 @@ import { safeBalanceQueryKey } from "./useSafeBalance.js";
  *
  * Once the tx is confirmed it invalidates the two reads it moves: the
  * withdrawal queue (the claimed entry leaves it) and the wallet balance (the
- * tokens return); a Safe proposal moves nothing yet (see `useTxSender`).
+ * tokens return) via `invalidateFlowReads`; a Safe proposal moves nothing
+ * until it executes, when `SafeProposalWatchers` refresh them.
  * Mutations never auto-retry (a write may have broadcast despite an error).
  */
 export function useClaim() {
@@ -33,7 +33,7 @@ export function useClaim() {
       );
 
       if (await sender.isSafeAccount()) {
-        return sender.batchForSafe([
+        return sender.batchForSafe("claim", [
           { to: client.config.addresses.staking, data: client.staking.encodeClaimWithdrawal() },
         ]);
       }
@@ -41,10 +41,9 @@ export function useClaim() {
     },
     onError: (err) => logger.error("claim failed:", err),
     onSuccess: (outcome) => {
+      // A Safe proposal moved nothing yet — its watcher refreshes on execution.
       if (outcome.status !== "confirmed") return;
-      const chainId = client?.config.chainId;
-      queryClient.invalidateQueries({ queryKey: withdrawalsQueryKey(chainId, address) });
-      queryClient.invalidateQueries({ queryKey: safeBalanceQueryKey(chainId, address) });
+      invalidateFlowReads(queryClient, "claim", client?.config.chainId, address);
     },
   });
 }

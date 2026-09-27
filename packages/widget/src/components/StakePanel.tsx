@@ -10,6 +10,7 @@ import { ValidatorSelect } from "./ValidatorSelect.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { Button } from "./ui/button.js";
 import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 
 export interface PanelProps {
   state: StakeViewState;
@@ -31,7 +32,8 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
   } = state;
 
   const { data: allowance } = useSafeAllowance();
-  const { mutate: stake, isPending, step, error, data: outcome } = useStake();
+  const { mutate: stake, isPending, step, error } = useStake();
+  const proposal = useSafeProposal("stake");
 
   const wrongNetwork = useWrongNetwork();
 
@@ -119,7 +121,7 @@ export function StakePanel({ state, symbol, decimals }: PanelProps) {
         </p>
       )}
 
-      <SafeProposedNotice outcome={outcome} />
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }

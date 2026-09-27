@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { SafeStakeClient } from "@chainza/safenet-staking-core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useWidgetStore } from "../store.js";
 import { useClaim } from "./useClaim.js";
 
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
@@ -19,7 +20,6 @@ const claimWithdrawal = vi.fn();
 const encodeClaimWithdrawal = vi.fn();
 const waitForTransactionReceipt = vi.fn();
 const sendCalls = vi.fn();
-const waitForCallsStatus = vi.fn();
 const safeThreshold = vi.fn();
 let connectorType = "injected";
 
@@ -39,7 +39,7 @@ vi.mock("wagmi", () => ({
     getCode: async () => undefined,
   }),
   useWalletClient: () => ({
-    data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
+    data: { account: { address: ACCOUNT }, chain: { id: 1 }, sendCalls },
   }),
 }));
 
@@ -51,12 +51,13 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 describe("useClaim", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useWidgetStore.setState({ safeProposals: [] });
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     waitForTransactionReceipt.mockResolvedValue({ status: "success" });
     claimWithdrawal.mockResolvedValue("0xclaim");
     encodeClaimWithdrawal.mockReturnValue("0xencoded");
     sendCalls.mockResolvedValue({ id: SAFE_TX_HASH });
-    // A multisig by default: Safe-path flows end `proposed` without waiting.
+    // Answers the Safe-detection read on non-Safe connectors.
     safeThreshold.mockResolvedValue(2n);
     connectorType = "injected";
   });
@@ -74,6 +75,9 @@ describe("useClaim", () => {
     expect(waitForTransactionReceipt).not.toHaveBeenCalled();
     expect(invalidate).not.toHaveBeenCalled();
     expect(result.current.data).toEqual({ status: "proposed", safeTxHash: SAFE_TX_HASH });
+    expect(useWidgetStore.getState().safeProposals).toEqual([
+      expect.objectContaining({ id: SAFE_TX_HASH, flow: "claim", status: "pending" }),
+    ]);
   });
 
   it("claims the next matured withdrawal and waits for its receipt", async () => {

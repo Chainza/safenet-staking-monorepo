@@ -6,6 +6,7 @@ import { useStakeData, type StakeViewState } from "./hooks/useStakeData.js";
 import { useSafeTokenMeta } from "./hooks/useSafeTokenMeta.js";
 import { useIsSanctioned } from "./hooks/useIsSanctioned.js";
 import { SanctionedNotice } from "./components/SanctionedNotice.js";
+import { SafeProposalWatchers } from "./components/SafeProposalWatchers.js";
 import { PanelErrorBoundary } from "./components/PanelErrorBoundary.js";
 import { RisksDisclosure } from "./components/RisksDisclosure.js";
 import { Header } from "./components/Header.js";
@@ -70,6 +71,8 @@ function WidgetInner({ theme }: { theme: WidgetTheme }) {
       data-mode={resolvedMode}
     >
       <Card className="ss:rounded-[20px] ss:p-5 ss:animate-rise">
+        {/* Awaits pending Safe proposals whichever tab is open; renders nothing. */}
+        <SafeProposalWatchers />
         <Header />
 
         {sanctioned ? (

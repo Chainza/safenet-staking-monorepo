@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { parseEther, type Address } from "viem";
 import { RewardsPanel } from "./RewardsPanel.js";
 import type { StakeViewState } from "../hooks/useStakeData.js";
+import type { SafeProposal } from "../store.js";
 import type { RewardProof } from "../hooks/useRewardProof.js";
 import type { RewardsData } from "../hooks/useRewards.js";
 
@@ -15,7 +16,7 @@ const ROOT = `0x${"aa".repeat(32)}` as const;
 let proof: RewardProof | null | undefined;
 let rewards: RewardsData;
 const claimMutate = vi.fn();
-let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown; data?: unknown };
+let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown };
 let wrongNetwork = false;
 
 vi.mock("../hooks/useRewardProof.js", () => ({ useRewardProof: () => ({ data: proof }) }));
@@ -42,9 +43,18 @@ function renderPanel(state: StakeViewState = baseState()) {
   return render(<RewardsPanel state={state} symbol="SAFE" decimals={18} />);
 }
 
+// The flow's Safe proposal comes from the store via this hook (covered in
+// useSafeProposals.test); stub it to drive the notice / duplicate guard.
+let proposal: SafeProposal | undefined;
+vi.mock("../hooks/useSafeProposals.js", () => ({ useSafeProposal: () => proposal }));
+function pendingProposal(flow: SafeProposal["flow"]): SafeProposal {
+  return { id: "0xsafe", flow, account: ACCOUNT, chainId: 1, status: "pending" };
+}
+
 describe("RewardsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    proposal = undefined;
     wrongNetwork = false;
     proof = { cumulativeAmount: "1000", merkleRoot: ROOT, proof: [`0x${"bb".repeat(32)}`] };
     rewards = {
@@ -117,13 +127,8 @@ describe("RewardsPanel", () => {
     expect(screen.getByText(/pending compliance checks/i)).toBeDefined();
   });
 
-  it("blocks a duplicate claim and shows the Safe notice once a claim was proposed", () => {
-    claimReturn = {
-      mutate: claimMutate,
-      isPending: false,
-      error: null,
-      data: { status: "proposed", safeTxHash: "0xsafe" },
-    };
+  it("blocks a duplicate claim and shows the Safe notice while a proposal is pending", () => {
+    proposal = pendingProposal("rewards");
     renderPanel();
     expect(screen.getByRole("button", { name: "Queued in Safe" })).toHaveProperty("disabled", true);
     expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);

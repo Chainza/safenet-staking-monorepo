@@ -9,6 +9,7 @@ import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
 import { Summary, SummaryRow } from "./Summary.js";
 import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 import type { PanelProps } from "./StakePanel.js";
 
 /** Rewards flow → `MerkleDrop.claim` with the account's published proof.
@@ -19,7 +20,8 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
   const { connected } = state;
   const { data: proof } = useRewardProof();
   const rewards = useRewards();
-  const { mutate: claim, isPending, error, data: outcome } = useClaimRewards();
+  const { mutate: claim, isPending, error } = useClaimRewards();
+  const proposal = useSafeProposal("rewards");
   const wrongNetwork = useWrongNetwork();
 
   // A missing proof covers both "still loading" and "no rewards ever" (404).
@@ -57,7 +59,7 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
   } else if (isPending) {
     label = "Claiming…";
     canSubmit = false;
-  } else if (outcome?.status === "proposed") {
+  } else if (proposal?.status === "pending") {
     label = "Queued in Safe";
     canSubmit = false;
   } else if (rewards.rootStale) {
@@ -118,7 +120,7 @@ export function RewardsPanel({ state, symbol, decimals }: PanelProps) {
         </p>
       )}
 
-      <SafeProposedNotice outcome={outcome} />
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }

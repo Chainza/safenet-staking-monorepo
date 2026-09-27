@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import type { SafeStakeClient } from "@chainza/safenet-staking-core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useWidgetStore } from "../store.js";
 import { useStake } from "./useStake.js";
 
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
@@ -23,7 +24,6 @@ const encodeApprove = vi.fn();
 const encodeStake = vi.fn();
 const waitForTransactionReceipt = vi.fn();
 const sendCalls = vi.fn();
-const waitForCallsStatus = vi.fn();
 const safeThreshold = vi.fn();
 const accountCode = vi.fn();
 let connectorType = "injected";
@@ -45,7 +45,7 @@ vi.mock("wagmi", () => ({
     getCode: accountCode,
   }),
   useWalletClient: () => ({
-    data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
+    data: { account: { address: ACCOUNT }, chain: { id: 1 }, sendCalls },
   }),
 }));
 
@@ -65,6 +65,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 describe("useStake", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useWidgetStore.setState({ safeProposals: [] });
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     waitForTransactionReceipt.mockResolvedValue({ status: "success" });
     approve.mockResolvedValue("0xapprove");
@@ -72,7 +73,7 @@ describe("useStake", () => {
     encodeApprove.mockReturnValue("0xapprovedata");
     encodeStake.mockReturnValue("0xstakedata");
     sendCalls.mockResolvedValue({ id: SAFE_TX_HASH });
-    // A multisig by default: Safe-path flows end `proposed` without waiting.
+    // Answers the Safe-detection read on non-Safe connectors.
     safeThreshold.mockResolvedValue(2n);
     accountCode.mockResolvedValue(undefined);
     connectorType = "injected";
@@ -100,28 +101,10 @@ describe("useStake", () => {
     expect(waitForTransactionReceipt).not.toHaveBeenCalled();
     expect(invalidate).not.toHaveBeenCalled();
     expect(result.current.data).toEqual({ status: "proposed", safeTxHash: SAFE_TX_HASH });
+    expect(useWidgetStore.getState().safeProposals).toEqual([
+      expect.objectContaining({ id: SAFE_TX_HASH, flow: "stake", status: "pending" }),
+    ]);
     expect(result.current.step).toBe("idle");
-  });
-
-  it("confirms a 1-of-1 Safe's executed batch and refreshes the reads it moved", async () => {
-    connectorType = "safe";
-    getAllowance.mockResolvedValue(0n);
-    safeThreshold.mockResolvedValue(1n);
-    waitForCallsStatus.mockResolvedValue({
-      status: "success",
-      receipts: [{ transactionHash: "0xexec" }, { transactionHash: "0xexec" }],
-    });
-    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
-    const { result } = renderHook(() => useStake(), { wrapper });
-
-    act(() => result.current.mutate({ validator: VALIDATOR, amount: 100n }));
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(waitForTransactionReceipt).toHaveBeenCalledWith({ hash: "0xexec" });
-    expect(result.current.data).toEqual({ status: "confirmed", hash: "0xexec" });
-    const keys = invalidate.mock.calls.map((c) => c[0]?.queryKey);
-    expect(keys).toContainEqual(["safe-stake", "balance", 1, ACCOUNT]);
-    expect(keys).toContainEqual(["safe-stake", "staked-balance", 1]);
   });
 
   it("routes a Safe connected over WalletConnect to the Safe batch too", async () => {
@@ -137,6 +120,9 @@ describe("useStake", () => {
     expect(approve).not.toHaveBeenCalled();
     expect(stake).not.toHaveBeenCalled();
     expect(result.current.data).toEqual({ status: "proposed", safeTxHash: SAFE_TX_HASH });
+    expect(useWidgetStore.getState().safeProposals).toEqual([
+      expect.objectContaining({ id: SAFE_TX_HASH, flow: "stake", status: "pending" }),
+    ]);
   });
 
   it("sends nothing when the Safe detection read fails", async () => {

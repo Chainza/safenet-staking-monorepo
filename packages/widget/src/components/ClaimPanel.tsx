@@ -8,6 +8,7 @@ import { Card } from "./ui/card.js";
 import { Button } from "./ui/button.js";
 import { Badge } from "./ui/badge.js";
 import { SafeProposedNotice } from "./SafeProposedNotice.js";
+import { useSafeProposal } from "../hooks/useSafeProposals.js";
 import type { PanelProps } from "./StakePanel.js";
 
 /** Claim flow → `staking.claimWithdrawal()` once a queued withdrawal matures
@@ -17,7 +18,8 @@ import type { PanelProps } from "./StakePanel.js";
 export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   const { connected, withdrawals } = state;
   const nowMs = useDateNow();
-  const { mutate: claim, isPending, error, data: outcome } = useClaim();
+  const { mutate: claim, isPending, error } = useClaim();
+  const proposal = useSafeProposal("claim");
 
   if (!connected || withdrawals.length === 0) {
     return (
@@ -54,7 +56,7 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
   if (isPending) {
     label = "Claiming…";
     canSubmit = false;
-  } else if (outcome?.status === "proposed") {
+  } else if (proposal?.status === "pending") {
     label = "Queued in Safe";
     canSubmit = false;
   } else if (!hasClaimable) {
@@ -136,7 +138,7 @@ export function ClaimPanel({ state, symbol, decimals }: PanelProps) {
         </p>
       )}
 
-      <SafeProposedNotice outcome={outcome} />
+      <SafeProposedNotice proposal={proposal} />
     </div>
   );
 }

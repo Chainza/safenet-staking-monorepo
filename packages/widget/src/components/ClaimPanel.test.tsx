@@ -4,13 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { parseEther, type Address } from "viem";
 import { ClaimPanel } from "./ClaimPanel.js";
 import type { StakeViewState } from "../hooks/useStakeData.js";
+import type { SafeProposal } from "../store.js";
 
 const ACCOUNT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as Address;
 
 // The flow hook is exercised in its own suite; here we stub it to drive the
 // panel's button copy / submit wiring deterministically.
 const claimMutate = vi.fn();
-let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown; data?: unknown };
+let claimReturn: { mutate: typeof claimMutate; isPending: boolean; error: unknown };
 vi.mock("../hooks/useClaim.js", () => ({ useClaim: () => claimReturn }));
 
 // Freeze "now" so countdowns are deterministic (ms; claimableAt is unix seconds).
@@ -38,9 +39,18 @@ function renderPanel(state: StakeViewState) {
   return render(<ClaimPanel state={state} symbol="SAFE" decimals={18} />);
 }
 
+// The flow's Safe proposal comes from the store via this hook (covered in
+// useSafeProposals.test); stub it to drive the notice / duplicate guard.
+let proposal: SafeProposal | undefined;
+vi.mock("../hooks/useSafeProposals.js", () => ({ useSafeProposal: () => proposal }));
+function pendingProposal(flow: SafeProposal["flow"]): SafeProposal {
+  return { id: "0xsafe", flow, account: ACCOUNT, chainId: 1, status: "pending" };
+}
+
 describe("ClaimPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    proposal = undefined;
     claimReturn = { mutate: claimMutate, isPending: false, error: null };
   });
 
@@ -81,16 +91,18 @@ describe("ClaimPanel", () => {
     expect(screen.getByRole("button", { name: "Claiming…" })).toHaveProperty("disabled", true);
   });
 
-  it("blocks a duplicate claim and shows the Safe notice once a claim was proposed", () => {
-    claimReturn = {
-      mutate: claimMutate,
-      isPending: false,
-      error: null,
-      data: { status: "proposed", safeTxHash: "0xsafe" },
-    };
+  it("blocks a duplicate claim and shows the Safe notice while a proposal is pending", () => {
+    proposal = pendingProposal("claim");
     renderPanel(baseState({ withdrawals: [matured] }));
     expect(screen.getByRole("button", { name: "Queued in Safe" })).toHaveProperty("disabled", true);
     expect(screen.getByRole("status").textContent).toMatch(/queued in your safe/i);
+  });
+
+  it("allows claiming again once the Safe proposal failed", () => {
+    proposal = { ...pendingProposal("claim"), status: "failed" };
+    renderPanel(baseState({ withdrawals: [matured] }));
+    expect(screen.getByRole("button", { name: "Claim next" })).toHaveProperty("disabled", false);
+    expect(screen.getByRole("alert").textContent).toMatch(/failed or was cancelled/i);
   });
 
   it("shows an alert when the flow errors", () => {

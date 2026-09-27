@@ -6,7 +6,7 @@ import { logger } from "../lib/logger.js";
 import { useConnectionScopedMutation } from "./useConnectionScopedMutation.js";
 import { useSafeStakeClient } from "./useSafeStakeClient.js";
 import { useTxSender, type TxOutcome } from "./useTxSender.js";
-import { withdrawalsQueryKey } from "./useWithdrawals.js";
+import { invalidateFlowReads } from "./invalidateFlowReads.js";
 
 export interface UnstakeVars {
   validator: Address;
@@ -22,7 +22,8 @@ export interface UnstakeVars {
  *
  * Once the tx is confirmed it invalidates every read it moves (the account's
  * staked balances, the validator stake totals, and the withdrawal queue) so the
- * panels refresh; a Safe proposal moves nothing yet (see `useTxSender`).
+ * panels refresh (`invalidateFlowReads`); a Safe proposal moves nothing until
+ * it executes, when `SafeProposalWatchers` refresh them.
  * Mutations never auto-retry (a write may have broadcast despite an error).
  */
 export function useUnstake() {
@@ -39,7 +40,7 @@ export function useUnstake() {
       );
 
       if (await sender.isSafeAccount()) {
-        return sender.batchForSafe([
+        return sender.batchForSafe("unstake", [
           {
             to: client.config.addresses.staking,
             data: client.staking.encodeInitiateWithdrawal(validator, amount),
@@ -50,13 +51,9 @@ export function useUnstake() {
     },
     onError: (err) => logger.error("unstake failed:", err),
     onSuccess: (outcome) => {
+      // A Safe proposal moved nothing yet — its watcher refreshes on execution.
       if (outcome.status !== "confirmed") return;
-      const chainId = client?.config.chainId;
-      queryClient.invalidateQueries({ queryKey: withdrawalsQueryKey(chainId, address) });
-      // Prefix-match every staked-balance / validator-stakes entry for this
-      // chain (any validator) — both totals move when the withdrawal is queued.
-      queryClient.invalidateQueries({ queryKey: ["safe-stake", "staked-balance", chainId] });
-      queryClient.invalidateQueries({ queryKey: ["safe-stake", "validator-stakes", chainId] });
+      invalidateFlowReads(queryClient, "unstake", client?.config.chainId, address);
     },
   });
 }
