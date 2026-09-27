@@ -14,3 +14,11 @@ export function truncateHash(hash: string, lead = 6, tail = 4): string {
   if (hash.length <= lead + tail) return hash;
   return `${hash.slice(0, lead)}…${hash.slice(-tail)}`;
 }
+
+/** Format a token amount compactly for tight spots (8200 → "8.2K", 750 → "750"). */
+export function formatCompactToken(amount: bigint, decimals = 18): string {
+  return Number(formatUnits(amount, decimals)).toLocaleString("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  });
+}

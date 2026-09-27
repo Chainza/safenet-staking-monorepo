@@ -108,8 +108,22 @@ addresses: { staking, token, merkleDrop, sanctionsList } }` (no RPC URL/transpor
     left is the oracle screen. The call gate is **fail-closed** (nothing fetches until the
     screen confirms the wallet clean); only the notice itself waits for a confirmed flag.
     Remaining follow-up (see TODO.md): country-level (geo-IP) screening.
+  - **Header position badges** — while connected, `PositionBadges` (one pill left of the
+    wallet control from `min-[1400px]`, at the top of the burger menu below `xs`; hidden in
+    between, where a full three-segment pill runs into the centered nav) shows compact SAFE
+    segments: total **staked** across validators (always, so zero reads as "nothing staked")
+    plus **unstaking** / **claimable** withdrawals while non-zero. Hover/focus opens a
+    CSS-only hint tooltip (`group-hover`/`group-focus-within`, wired via `aria-describedby`)
+    listing all three states with exact amounts and a one-line explanation each.
+    Data comes from `hooks/useStakePosition.ts`, which calls core directly (the widget exports
+    no hooks, and the widget itself is left untouched). It **screens fail-closed like the
+    widget**: `sanctions.isSanctioned` runs first and the position reads only follow a clean
+    result (sanctioned → `null`, failed screen → error; both render nothing). The widget's
+    writes invalidate only their own query keys, so the hook re-reads on a 20s
+    `refetchInterval` instead.
 
-Dependency direction is enforced by `workspace:*` links: widget → core, website → widget.
+Dependency direction is enforced by `workspace:*` links: widget → core, website → widget
+(+ website → core, for the header's own reads — see **Header position badges** above).
 The website imports the widget from its **built `dist/`** (via package `exports`), so the
 widget must be built before the app resolves it — `turbo build` handles ordering.
 
