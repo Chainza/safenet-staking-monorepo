@@ -22,6 +22,8 @@ const claim = vi.fn();
 const encodeClaim = vi.fn();
 const waitForTransactionReceipt = vi.fn();
 const sendCalls = vi.fn();
+const waitForCallsStatus = vi.fn();
+const safeThreshold = vi.fn();
 let connectorType = "injected";
 
 const client = {
@@ -37,8 +39,10 @@ vi.mock("./useRewardProof.js", async (importOriginal) => ({
 }));
 vi.mock("wagmi", () => ({
   useConnection: () => ({ address: ACCOUNT, connector: { type: connectorType } }),
-  usePublicClient: () => ({ waitForTransactionReceipt }),
-  useWalletClient: () => ({ data: { sendCalls } }),
+  usePublicClient: () => ({ waitForTransactionReceipt, readContract: safeThreshold }),
+  useWalletClient: () => ({
+    data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
+  }),
 }));
 
 let queryClient: QueryClient;
@@ -55,6 +59,8 @@ describe("useClaimRewards", () => {
     claim.mockResolvedValue("0xrewards");
     encodeClaim.mockReturnValue("0xencoded");
     sendCalls.mockResolvedValue({ id: SAFE_TX_HASH });
+    // A multisig by default: Safe-path flows end `proposed` without waiting.
+    safeThreshold.mockResolvedValue(2n);
     connectorType = "injected";
   });
 

@@ -23,6 +23,8 @@ const encodeApprove = vi.fn();
 const encodeStake = vi.fn();
 const waitForTransactionReceipt = vi.fn();
 const sendCalls = vi.fn();
+const waitForCallsStatus = vi.fn();
+const safeThreshold = vi.fn();
 let connectorType = "injected";
 
 const client = {
@@ -34,8 +36,10 @@ const client = {
 vi.mock("./useSafeStakeClient.js", () => ({ useSafeStakeClient: () => client }));
 vi.mock("wagmi", () => ({
   useConnection: () => ({ address: ACCOUNT, connector: { type: connectorType } }),
-  usePublicClient: () => ({ waitForTransactionReceipt }),
-  useWalletClient: () => ({ data: { sendCalls } }),
+  usePublicClient: () => ({ waitForTransactionReceipt, readContract: safeThreshold }),
+  useWalletClient: () => ({
+    data: { account: { address: ACCOUNT }, sendCalls, waitForCallsStatus },
+  }),
 }));
 
 function deferred<T>() {
@@ -61,6 +65,8 @@ describe("useStake", () => {
     encodeApprove.mockReturnValue("0xapprovedata");
     encodeStake.mockReturnValue("0xstakedata");
     sendCalls.mockResolvedValue({ id: SAFE_TX_HASH });
+    // A multisig by default: Safe-path flows end `proposed` without waiting.
+    safeThreshold.mockResolvedValue(2n);
     connectorType = "injected";
   });
 
@@ -87,6 +93,27 @@ describe("useStake", () => {
     expect(invalidate).not.toHaveBeenCalled();
     expect(result.current.data).toEqual({ status: "proposed", safeTxHash: SAFE_TX_HASH });
     expect(result.current.step).toBe("idle");
+  });
+
+  it("confirms a 1-of-1 Safe's executed batch and refreshes the reads it moved", async () => {
+    connectorType = "safe";
+    getAllowance.mockResolvedValue(0n);
+    safeThreshold.mockResolvedValue(1n);
+    waitForCallsStatus.mockResolvedValue({
+      status: "success",
+      receipts: [{ transactionHash: "0xexec" }, { transactionHash: "0xexec" }],
+    });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useStake(), { wrapper });
+
+    act(() => result.current.mutate({ validator: VALIDATOR, amount: 100n }));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(waitForTransactionReceipt).toHaveBeenCalledWith({ hash: "0xexec" });
+    expect(result.current.data).toEqual({ status: "confirmed", hash: "0xexec" });
+    const keys = invalidate.mock.calls.map((c) => c[0]?.queryKey);
+    expect(keys).toContainEqual(["safe-stake", "balance", 1, ACCOUNT]);
+    expect(keys).toContainEqual(["safe-stake", "staked-balance", 1]);
   });
 
   it("proposes the stake alone in the Safe when the allowance already covers it", async () => {
