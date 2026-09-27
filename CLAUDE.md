@@ -179,10 +179,12 @@ widget's own `build:css` _and_ the website resolving it to source.
   `src/wagmi.ts`. Like WalletConnect, `@wagmi/connectors` lazy-imports the Safe SDK and does not
   bundle it, so **`@safe-global/safe-apps-sdk` + `@safe-global/safe-apps-provider`** are the
   widget's _optional_ peers (ranges matching `@wagmi/connectors`'s own) and the website's
-  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's. **Under this
-  connector a write's "hash" is a `safeTxHash`** (the Safe provider returns it from
-  `eth_sendTransaction`), which no RPC knows — so write flows must never wait for its receipt;
-  see `useTxSender` under **On-chain data hooks**.
+  exact-pinned direct deps. No Node polyfills needed beyond WalletConnect's. **When the account
+  is a Safe a write's "hash" is often a `safeTxHash`** (the Safe provider returns it from
+  `eth_sendTransaction`), which no RPC knows — so write flows must never wait for its receipt.
+  That holds for this connector _and_ for a Safe connected from Safe{Wallet} over WalletConnect
+  (Safe{Wallet} serves both through the same `SafeWalletProvider`); see `useTxSender` under
+  **On-chain data hooks**.
 - **Connect UI — `src/components/WalletControl.tsx`** is built directly on wagmi hooks —
   **no ConnectKit or extra wallet UI lib**. Mind the **wagmi v3 deprecations**: use `useConnection`
   (not `useAccount`), and the mutation hooks' `mutate` (not the deprecated `connect`/`disconnect`
@@ -254,10 +256,15 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   disabled "Queued in Safe" branch, since a second claim of the same entry would fail on execution.
 - **Sending + settling a tx — `hooks/useTxSender.ts`** is the one seam every write flow goes
   through; flows never call `waitForTransactionReceipt` or `sendCalls` themselves. It returns
-  `{ isSafe, batchForSafe, confirmOnChain }` and the `TxOutcome` union (`confirmed` with the
-  on-chain `hash`, or `proposed` with the `safeTxHash`). Regular wallets send through core's
-  bound writes and `confirmOnChain` waits for a successful receipt. **Under the Safe connector**
-  (`connector.type === "safe"`) a flow instead encodes its calls (core's `encode*` builders +
+  `{ isSafeAccount, batchForSafe, confirmOnChain }` and the `TxOutcome` union (`confirmed` with
+  the on-chain `hash`, or `proposed` with the `safeTxHash`). Regular wallets send through core's
+  bound writes and `confirmOnChain` waits for a successful receipt. **Routing is by account, not
+  connector**: each flow asks `await isSafeAccount()` at submit time — the Safe connector
+  answers `true` with no read; otherwise the account is a Safe when `getCode` finds code _and_
+  `getThreshold()` returns a non-zero value (no code, or a revert/empty return, means a regular
+  wallet), and an RPC failure **throws before anything is sent** rather than guessing (a Safe
+  misrouted to the receipt path can only time out). **For a Safe account** a flow instead
+  encodes its calls (core's `encode*` builders +
   `client.config.addresses`) and hands them to `batchForSafe`, which sends them as **one EIP-5792
   `wallet_sendCalls`** (so stake's approve + stake is a single Safe tx — sequencing them would
   block the stake on an approval a multisig may not execute for days), then reads the Safe's
@@ -267,10 +274,11 @@ amount)` tx (no approval) moving the stake into the withdrawal queue; on success
   our own RPC has the block before reads refetch; a failed/cancelled Safe tx throws; a timeout
   (signed, not executed) ends `proposed`. **After `wallet_sendCalls` returns the calls are
   queued, so any failing lookup degrades to `proposed` — never report a queued tx as failed.**
-  Known gaps (tracked in TODO.md): there is **no background polling** of a
-  `proposed` tx, so after a multisig executes later the reads stay stale until reload (the
-  QueryClient has `refetchOnMount`/`refetchOnWindowFocus` off); and a Safe connected **via
-  WalletConnect** (not as a Safe App) isn't detected, so it still takes the receipt path.
+  Over WalletConnect the status must come from `wallet_getCallsStatus` (Safe{Wallet} approves
+  the EIP-5792 methods in its sessions), because WalletConnect sends `eth_getTransactionReceipt`
+  to its own RPC, which can't resolve a `safeTxHash`. Known gap (tracked in TODO.md): there is
+  **no background polling** of a `proposed` tx, so after a multisig executes later the reads
+  stay stale until reload (the QueryClient has `refetchOnMount`/`refetchOnWindowFocus` off).
 - **Sanctions screening — `hooks/useIsSanctioned.ts`.** One account-scoped query
   (`isSanctionedQueryKey`, hour-long `staleTime` — designations change rarely) calling
   `sanctions.isSanctioned` through the **unscreened** client for the connected account. Two
