@@ -232,8 +232,11 @@ widget's own `build:css` _and_ the website resolving it to source.
   `withdrawDelay` needs no account (a contract-wide param) so it reads even while disconnected;
   `withdrawals` is account-scoped. `StakeData.withdrawals` is typed `readonly` to match viem's
   inferred tuple-array return.
-- **Writes are mutation hooks, one per flow.** A write flow is a `useMutation` hook
-  (`useSomeAction`) colocated with its reads that sends and settles through **`useTxSender`**
+- **Writes are mutation hooks, one per flow.** A write flow is a mutation hook
+  (`useSomeAction`) colocated with its reads, built on **`useConnectionScopedMutation`** (a
+  `useMutation` that resets when the account or chain changes, so a previous account's
+  outcome — a queued Safe tx, a failure alert — never leaks into the next; never use bare
+  `useMutation` for a write). It sends and settles through **`useTxSender`**
   (below) and resolves to a `TxOutcome`; once it's `confirmed` it
   `queryClient.invalidateQueries` the reads the tx moves (use the exported key builders, or a
   partial-key prefix to sweep every validator/account variant) — a `proposed` outcome moved
