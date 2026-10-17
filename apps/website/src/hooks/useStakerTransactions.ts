@@ -3,9 +3,7 @@ import { useConnection } from "wagmi";
 import axios from "axios";
 import type { Address, Hash } from "viem";
 import { assert } from "ts-essentials";
-
-/** Base URL of the Indexer API (`GET /stakers/{staker}`). */
-export const INDEXER_API_URL = "https://api.chainza.io/safenet";
+import { INDEXER_API_URL } from "../lib/indexer.js";
 
 const REFETCH_INTERVAL_MS = 20_000;
 
