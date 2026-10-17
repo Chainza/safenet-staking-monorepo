@@ -28,9 +28,17 @@ describe("PrivacyPage", () => {
     expect(screen.getAllByText(/operated\s+by Chainza/).length).toBeGreaterThan(0);
   });
 
-  it("states that no cookies or analytics are used", () => {
+  it("states that no cookies or third-party analytics are used", () => {
     render(<PrivacyPage />);
-    expect(screen.getByText(/no cookies,\s*no analytics/i)).toBeDefined();
+    expect(screen.getByText(/no cookies,\s*no\s+third-party analytics/i)).toBeDefined();
+  });
+
+  it("discloses the indexer's anonymous page-visit counting", () => {
+    render(<PrivacyPage />);
+    expect(screen.getAllByText(/counts page visits/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/no IP address, cookie, device identifier or wallet address/),
+    ).toBeDefined();
   });
 
   it("offers the contact email for privacy inquiries", () => {
