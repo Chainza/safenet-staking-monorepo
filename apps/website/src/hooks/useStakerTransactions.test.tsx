@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import axios from "axios";
-import { useStakerTransactions, INDEXER_API_URL } from "./useStakerTransactions.js";
+import { INDEXER_API_URL } from "../lib/indexer.js";
+import { useStakerTransactions } from "./useStakerTransactions.js";
 import type { StakerTransactions } from "./useStakerTransactions.js";
 import { WagmiHarness, mainnetConfig, TEST_ADDRESS } from "../test/wagmi.js";
 

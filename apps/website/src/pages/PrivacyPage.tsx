@@ -3,7 +3,7 @@ import { LegalArticle, LegalLink, LegalSection } from "../components/LegalArticl
 /** Privacy policy: what actually leaves the browser, and to whom. */
 export function PrivacyPage() {
   return (
-    <LegalArticle title="Privacy Policy" updated="4 August 2026">
+    <LegalArticle title="Privacy Policy" updated="17 October 2026">
       <LegalSection title="1. Who we are">
         <p>
           This website and the staking interface it hosts (the &ldquo;Interface&rdquo;) are operated
@@ -16,9 +16,10 @@ export function PrivacyPage() {
       <LegalSection title="2. The short version">
         <p>
           The Interface runs entirely in your browser. There are no user accounts, no cookies, no
-          analytics or tracking scripts. The only service operated by Chainza itself is the Safenet
-          indexer that powers the transaction history; every other service the Interface talks to is
-          operated by a third party and reached directly from your browser.
+          third-party analytics or tracking scripts. The only service operated by Chainza itself is
+          the Safenet indexer, which powers the transaction history and counts page visits
+          anonymously; every other service the Interface talks to is operated by a third party and
+          reached directly from your browser.
         </p>
       </LegalSection>
 
@@ -38,7 +39,10 @@ export function PrivacyPage() {
           <li>
             <span className="font-medium text-[var(--page-fg)]">Safenet indexer</span> (operated by
             Chainza) — your wallet address, used to return your staking transaction history on the
-            Activity page. The indexer stores indexed public on-chain events, not user accounts or
+            Activity page. It also counts page visits: for each page you open it records the page,
+            the website address you reached it through and the site that referred you, with a
+            timestamp — no IP address, cookie, device identifier or wallet address. The indexer
+            stores indexed public on-chain events and these visit counts, not user accounts or
             profiles; standard access logs may be kept for operations and security.
           </li>
           <li>
@@ -81,10 +85,10 @@ export function PrivacyPage() {
           Applicable data-protection law (including the Law of Ukraine &ldquo;On Protection of
           Personal Data&rdquo; and, where it applies to you, the GDPR) grants you rights such as
           access, rectification and erasure. Beyond the indexer&rsquo;s record of public on-chain
-          events and its access logs, Chainza stores no personal data about you; requests concerning
-          the third-party services listed above generally need to be directed at those providers.
-          For anything Chainza can act on or assist with, reach out at{" "}
-          <LegalLink href="mailto:connect@chainza.io">connect@chainza.io</LegalLink>.
+          events, its anonymous page-visit counts and its access logs, Chainza stores no personal
+          data about you; requests concerning the third-party services listed above generally need
+          to be directed at those providers. For anything Chainza can act on or assist with, reach
+          out at <LegalLink href="mailto:connect@chainza.io">connect@chainza.io</LegalLink>.
         </p>
       </LegalSection>
 

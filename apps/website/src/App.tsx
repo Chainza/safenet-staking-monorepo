@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router";
 import { Footer } from "./components/Footer.js";
 import { Header } from "./components/Header.js";
+import { PageviewTracker } from "./components/PageviewTracker.js";
 import { ActivityPage } from "./pages/ActivityPage.js";
 import { DocsPage } from "./pages/DocsPage.js";
 import { FaqPage } from "./pages/FaqPage.js";
@@ -26,6 +27,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <PageviewTracker />
       <Header theme={theme} onToggleTheme={toggleTheme} />
 
       {/* Top-aligned (no justify-center): the hero line must not shift with
