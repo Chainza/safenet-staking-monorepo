@@ -13,10 +13,12 @@ export interface Validator {
   name: string;
   /** Total SAFE delegated to this validator (base units). */
   totalStaked: bigint;
-  /** Validator fee on rewards, as a fraction (0.05 = 5%). */
-  commission: number;
-  /** Attestation participation over the last 14 days, as a fraction. */
-  participationRate14d: number;
+  /** Validator fee on rewards, as a fraction (0.05 = 5%); `null` when the
+   *  registry doesn't publish it. */
+  commission: number | null;
+  /** Attestation participation over the last 14 days, as a fraction; `null`
+   *  when the registry doesn't publish it (it ships `null` for every entry). */
+  participationRate14d: number | null;
 }
 
 /**
@@ -33,8 +35,8 @@ interface ValidatorInfo {
   address: string;
   label: string;
   is_active: boolean;
-  commission: number;
-  participation_rate_14d: number;
+  commission: number | null;
+  participation_rate_14d: number | null;
 }
 
 /** Key for the registry-JSON query (chain-independent — it's an HTTP fetch). */
