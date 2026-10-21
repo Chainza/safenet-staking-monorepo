@@ -53,6 +53,21 @@ describe("ValidatorSelect", () => {
     expect(trigger.textContent).toContain("99.7% uptime");
   });
 
+  it("shows a dash for stats the registry doesn't publish", () => {
+    render(
+      <ValidatorSelect
+        validators={[{ ...VALIDATORS[0]!, commission: null, participationRate14d: null }]}
+        value={undefined}
+        onValueChange={vi.fn()}
+        symbol="SAFE"
+        decimals={18}
+      />,
+    );
+    const trigger = screen.getByRole("combobox", { name: "Validator" });
+    expect(trigger.textContent).toContain("— fee");
+    expect(trigger.textContent).toContain("— uptime");
+  });
+
   it("falls back to the first validator when the value is unknown", () => {
     render(
       <ValidatorSelect

@@ -14,15 +14,20 @@ export interface ValidatorSelectProps {
   disabled?: boolean;
 }
 
+/** A registry stat as a percent, or a dash when the registry omits it. */
+function formatStat(fraction: number | null): string {
+  return fraction === null ? "—" : formatPercent(fraction);
+}
+
 /** Right-aligned registry stats: commission and 14-day participation rate. */
 function ValidatorStats({ validator }: { validator: Validator }) {
   return (
     <span className="ss:shrink-0 ss:text-right ss:text-xs">
       <span className="ss:block" title="Commission">
-        {formatPercent(validator.commission)} <span className="ss:text-muted-foreground">fee</span>
+        {formatStat(validator.commission)} <span className="ss:text-muted-foreground">fee</span>
       </span>
       <span className="ss:block" title="14-day participation rate">
-        {formatPercent(validator.participationRate14d)}{" "}
+        {formatStat(validator.participationRate14d)}{" "}
         <span className="ss:text-muted-foreground">uptime</span>
       </span>
     </span>
