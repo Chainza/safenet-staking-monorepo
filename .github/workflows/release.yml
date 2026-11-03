@@ -94,18 +94,12 @@ jobs:
           # public IPFS network (which can only happen once Filebase seeds it —
           # nothing else has these bytes yet). If this times out, check the
           # bucket is on the IPFS network — only those unpack CAR imports.
-          # Several gateways, first hit wins, and the body must be the built
-          # page (its <title>, as the uptime probe asserts): ipfs.io/dweb.link
-          # moved to a browser-only service-worker gateway, so a non-browser
-          # client gets a 429 or a notice page, never the content.
-          GATEWAYS="https://ipfs.filebase.io/ipfs/$CID/ https://$CID.ipfs.4everland.io/ https://$CID.ipfs.dweb.link/"
+          # The same gateway check as the uptime probe's fallback path.
           for i in $(seq 1 40); do
-            for url in $GATEWAYS; do
-              if curl -sf --max-time 30 "$url" | grep -q "<title>SAFE Staking</title>"; then
-                echo "CID resolves on the public IPFS network ($url)."
-                exit 0
-              fi
-            done
+            if node scripts/probe-cid.mjs "$CID"; then
+              echo "CID resolves on the public IPFS network."
+              exit 0
+            fi
             echo "waiting for the CID to resolve ($i/40)..."
             sleep 15
           done

@@ -467,8 +467,12 @@ Today core sits at ~70% with everything at 100% except `client.ts` (the bound
   the repo page that points at _staging_. Production is IPFS + ENS; don't re-enable it.
 - **Production uptime is monitored from CI and incidents are public.** The `Uptime`
   workflow (`.github/workflows/uptime.yml`) probes the canonical ENS gateway
-  (`safenetstake.eth.limo`) plus one independent fallback (`safenetstake.eth.sucks`) every
-  30 minutes, asserting the built page's `<title>`; a sustained failure auto-opens a GitHub
+  (`safenetstake.eth.limo`) plus one independent fallback every 30 minutes, asserting the
+  built page's `<title>`. The fallback must share nothing with eth.limo — `.eth.link` is
+  served by eth.limo and `.eth.sucks` redirects to it — so it reads the ENS contenthash
+  on-chain (`scripts/ens-cid.mjs`) and fetches that CID from IPFS gateways
+  (`scripts/probe-cid.mjs`, the same check the release workflow waits on; both zero-dep,
+  sharing `scripts/lib/contenthash.mjs` with `ens-contenthash.mjs`). A sustained failure auto-opens a GitHub
   issue labeled `incident` (deduplicated while one is open). Closed incidents get a summary
   row in `INCIDENTS.md` (the public incident log — a grant M2 requirement, so the run
   history is evidence: don't rename/disable the workflow casually, and keep the log's

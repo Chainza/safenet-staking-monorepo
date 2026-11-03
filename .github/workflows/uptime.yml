@@ -1,6 +1,10 @@
 # Uptime monitoring for the production deployment (M2 requirement): every 30
 # minutes, probe the canonical ENS gateway plus one independent fallback path
 # and assert the app actually serves (HTTP 200 + the built page's <title>).
+# The fallback reads safenetstake.eth's contenthash on-chain and fetches that
+# CID from public IPFS gateways, so it shares nothing with eth.limo (the other
+# ENS gateways, .eth.link and .eth.sucks, are now served or redirected by
+# eth.limo themselves).
 # Evidence lives in this workflow's run history; a sustained failure opens an
 # `incident` issue (deduplicated while one is open), which feeds INCIDENTS.md.
 name: Uptime
@@ -24,24 +28,41 @@ jobs:
         include:
           - name: primary (safenetstake.eth.limo)
             url: https://safenetstake.eth.limo/
-          - name: fallback (safenetstake.eth.sucks)
-            url: https://safenetstake.eth.sucks/
+          - name: fallback (ENS contenthash → IPFS gateways)
+            url: ""
     steps:
+      - name: Checkout scripts
+        if: ${{ matrix.url == '' }}
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+
       - name: Probe with retries
         run: |
+          probe() {
+            if [ -n "$URL" ]; then
+              curl -sS --max-time 30 "$URL" | grep -q "<title>SAFE Staking</title>"
+            else
+              # Resolve the record on every attempt: a release may update it
+              # between attempts, and an RPC blip deserves a retry too.
+              cid=$(node scripts/ens-cid.mjs) && echo "ENS contenthash → $cid" \
+                && node scripts/probe-cid.mjs "$cid"
+            fi
+          }
           # Three attempts 30s apart so a transient gateway blip doesn't page;
           # only a failure sustained across all three marks the run red.
           for attempt in 1 2 3; do
-            if curl -sS --max-time 30 "$URL" | grep -q "<title>SAFE Staking</title>"; then
-              echo "OK: $URL serves the app (attempt $attempt)"
+            if probe; then
+              echo "OK: $NAME serves the app (attempt $attempt)"
               exit 0
             fi
-            echo "attempt $attempt failed for $URL"
+            echo "attempt $attempt failed for $NAME"
             [ "$attempt" -lt 3 ] && sleep 30
           done
-          echo "DOWN: $URL failed all 3 attempts"
+          echo "DOWN: $NAME failed all 3 attempts"
           exit 1
         env:
+          NAME: ${{ matrix.name }}
           URL: ${{ matrix.url }}
 
   report:
@@ -71,7 +92,7 @@ jobs:
 
             Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            Next steps: check https://safenetstake.eth.limo/ and
-            https://safenetstake.eth.sucks/, identify the cause (gateway outage,
-            ENS record, pinning), and once resolved, close this issue and record
-            the incident in INCIDENTS.md.
+            Next steps: check https://safenetstake.eth.limo/ and the CID from
+            `node scripts/ens-cid.mjs` via `node scripts/probe-cid.mjs <CID>`,
+            identify the cause (gateway outage, ENS record, pinning), and once
+            resolved, close this issue and record the incident in INCIDENTS.md.
