@@ -16,7 +16,7 @@ gateway, or DNS operator can take all of them down.
 | #   | Path                   | How                                                                                                                                              | Depends on                     |
 | --- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
 | 1   | Native ENS resolution  | Open `safenetstake.eth` directly in an ENS-aware browser (Brave, Opera, Status, MetaMask Mobile)                                                 | ENS + any IPFS retrieval       |
-| 2   | ENS→IPFS gateways      | [safenetstake.eth.limo](https://safenetstake.eth.limo), [.eth.link](https://safenetstake.eth.link), [.eth.sucks](https://safenetstake.eth.sucks) | ENS + the gateway operator     |
+| 2   | ENS→IPFS gateways      | [safenetstake.eth.limo](https://safenetstake.eth.limo), [.eth.link](https://safenetstake.eth.link), [.eth.sucks](https://safenetstake.eth.sucks) | ENS + eth.limo (all three)     |
 | 3   | Direct CID via gateway | `https://<CID>.ipfs.dweb.link/`, `https://ipfs.io/ipfs/<CID>/`, or any other public gateway                                                      | The CID being pinned somewhere |
 | 4   | Local IPFS node        | `ipfs://<CID>` in an IPFS-enabled browser, or `ipfs pin add <CID>` + a local gateway                                                             | Nothing but the IPFS network   |
 | 5   | Self-hosting           | Anyone pins the CID (or imports the release's CAR file) and serves it from their own node/host                                                   | Only the person doing it       |
@@ -133,8 +133,9 @@ Outside the repo:
 - **ENS name** — `safenetstake.eth`, registered and held by an operator wallet; its
   `contenthash` is updated on each release (see the checklist above). Mind the expiry date —
   renew well before it (after expiry there's only a 90-day grace period).
-- **WalletConnect Cloud** — the ENS gateway origins (`safenetstake.eth.limo`, `.eth.link`,
-  `.eth.sucks`) must be on the project's allowed-domains list, or WalletConnect connections
+- **WalletConnect Cloud** — the ENS gateway origins (`safenetstake.eth.limo`, `.eth.link`)
+  must be on the project's allowed-domains list (`.eth.sucks` now redirects to `.eth.limo`,
+  so it is no longer an origin of its own), or WalletConnect connections
   from those origins may be rejected. Injected-wallet connections are unaffected.
 
 ## Staging

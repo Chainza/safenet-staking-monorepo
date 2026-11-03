@@ -7,9 +7,13 @@ staking interface (`safenetstake.eth`, served over IPFS + ENS).
 
 - The [`Uptime` workflow](.github/workflows/uptime.yml) probes the canonical
   gateway (`https://safenetstake.eth.limo/`) **and** an independent fallback
-  path (`https://safenetstake.eth.sucks/`) every 30 minutes, asserting an
-  HTTP 200 that actually serves the built app (the page `<title>`), with three
-  retries 30 seconds apart so transient blips don't count.
+  path every 30 minutes, asserting an HTTP 200 that actually serves the built
+  app (the page `<title>`), with three retries 30 seconds apart so transient
+  blips don't count. The fallback reads `safenetstake.eth`'s contenthash
+  record on-chain and fetches that CID from public IPFS gateways, so it checks
+  the ENS record and the pinning without going through eth.limo. Until
+  2026-11-03 it probed `https://safenetstake.eth.sucks/`, which now redirects
+  to eth.limo and so stopped being independent.
 - The workflow's
   [run history](https://github.com/Chainza/safenet-staking-monorepo/actions/workflows/uptime.yml)
   is the raw evidence trail; a sustained failure automatically opens a GitHub
